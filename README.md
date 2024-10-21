@@ -1,4 +1,4 @@
-# Emotions
+# Emotions - Emotion contagion model for dynamical crowd path planning
 
 ## Description
 Emotion contagion model for dynamical crowd path
