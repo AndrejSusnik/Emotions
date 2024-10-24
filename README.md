@@ -14,12 +14,19 @@ planning. Realistic and plausible simulation of crowd path planning and crowd be
 
   
 ## Starting Point:
-Emotion Contagion Model for Dynamical Crowd Path Planning: Yunpeng Wu et al. [link](https://doi.org/10.53941/ijndi.2024.100014}])
+Emotion Contagion Model for Dynamical Crowd Path Planning: Yunpeng Wu et al. [link](https://doi.org/10.53941/ijndi.2024.100014)
 
 ## Project stages
 * First (26.11.2024)
 Working simulation (simplified redo of the article), room, maybe not all parameters, collision avoidance (optional).
 Initial project structure: Agent class, Environment class (room), Main class (visualization)
+
+DONE:
+calculate_distance_preference(Agent)
+calculate_velocity_preference(Agent)
+(is in) relationship(Agent, Agent) TODO
+collective_density(Agent in Environment)
+
 
 * Second (7.12.2024)
 Working simulation from the article. Parallelize agent computations.
