@@ -1,10 +1,13 @@
 import numpy as np
 
 class Pair:
-    def __init__(self, x, y):
+    def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
-    
+
+    def get(self):
+        return self.x, self.y
+     
     def __add__(self, other):
         return Pair(self.x + other.x, self.y + other.y)
     
@@ -13,10 +16,21 @@ class Pair:
     
     # dot product
     def __mul__(self, other):
-        return self.x * other + self.y * other
+        return self.x * other.x + self.y * other.y
     
     def norm(self):
         return np.sqrt(self.x ** 2 + self.y ** 2)
+
+class OceanDistribution:
+    def __init__(self, openness: Pair, conscientiousness: Pair, extroversion: Pair, agreeableness: Pair, neuroticism: Pair):
+        self.openness_dist = openness
+        self.conscientiousness_dist = conscientiousness
+        self.extroversion_dist = extroversion
+        self.agreeableness_dist = agreeableness
+        self.neuroticism_dist = neuroticism
+
+    def getDistArray(self):
+        return [self.openness_dist, self.conscientiousness_dist, self.extroversion_dist, self.agreeableness_dist, self.neuroticism_dist]
 
 class Ocean:
     """
@@ -30,7 +44,7 @@ class Ocean:
         self.neuroticism = neuroticism
         
     @staticmethod    
-    def sample(openness_params: Pair, conscientiousness_params: Pair, extroversion_params: Pair, agreeableness_params: Pair, neuroticism_params: Pair):
+    def sample(oceanDistribution: OceanDistribution):
         """Sample OCEAN traits example, given the distribution for each dimension (as in the population)
 
         Args:
@@ -40,10 +54,15 @@ class Ocean:
             Ocean: sampled OCEAN traits example
         """
         ocean_params = []
-        for mu, sig in [openness_params, conscientiousness_params, extroversion_params, agreeableness_params, neuroticism_params]:
+        for dist in oceanDistribution.getDistArray():
+            mu, sig = dist.get()
             sig2 = sig ** 2
             assert 0 <= mu and mu <= 1
             assert -0.1 <= sig and sig <= 0.1
             s = np.random.normal(mu, sig2, 1)[0]
             ocean_params.append(s)
         return Ocean(*ocean_params)   
+
+    @staticmethod
+    def empty():
+        return Ocean(0, 0, 0, 0, 0)

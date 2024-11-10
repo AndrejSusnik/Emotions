@@ -7,14 +7,14 @@ class Agent:
     """
     def __init__(self, id: int):
         self.id = id
-        self.source : Pair = None
-        self.destination : Pair = None
+        self.source : Pair = Pair(0, 0)
+        self.destination : Pair = Pair(0, 0)
         
         # motion features
-        self.velocity : Pair = None
-        self.position : Pair = None
+        self.velocity : Pair = Pair(0, 0)
+        self.position : Pair = Pair(0, 0)
         
-        self.traits : Ocean = None
+        self.traits : Ocean = Ocean.empty()
     
     # Emotion preferences (if one large, the other small)
     def calculate_distance_preference(self):
@@ -74,7 +74,4 @@ class Agent:
         Wij = 1 if d_xy <= (cut_xy * theta) or lam == 1 else 0
         
         return Wij
-    
-        
-        
         

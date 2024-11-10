@@ -38,3 +38,31 @@ Working simulation
 Screens from simulation, and all traces
 
 
+## Running the project
+To run the project, you need to have Python installed on your computer. You can download it [here](https://www.python.org/downloads/).
+
+After you have installed Python, you can clone the repository by running the following command in your terminal:
+```bash
+git clone git@github.com:AndrejSusnik/Emotions.git
+```
+
+Then, navigate to the project folder:
+```bash
+
+```
+
+In the src folder create .env file with the following content:
+```bash
+    ENVIRONMENTS_PATH=path/to/environments
+```
+
+
+Create virtual environment and install the required packages:
+```bash
+
+```
+
+To run the project, run the following command:
+```bash
+
+```
