@@ -62,11 +62,11 @@ class Agent:
         
         d_xy = (self.position - other.position).norm()
         
-        # this definition deffers from the article
-        # I believe this is better, than abs(arcos(vel_i) - arcos(vel_j))
+        # this definition differs from the article
+        # I believe this is better than abs(arcos(vel_i) - arcos(vel_j))
         # what is arcos(<vector>) anyway?
         # if the difference in angle is for example 359 degrees, would not that be falsely very different (diff should be 1 degree in this case)
-        d_ori = np.arccos((self.velocity * other.velocity) / (self.velocity.norm() * other.velocity.norm()))
+        d_ori = np.arccos(np.dot(self.velocity,other.velocity) / (self.velocity.norm() * other.velocity.norm()))
         
         theta = np.exp(-(d_ori/cut_ori)**2) if d_ori >= cut_ori else 1 + np.exp(-(d_ori/cut_ori)**2)
         share_same_goal = False # TODO how do w get this information?
