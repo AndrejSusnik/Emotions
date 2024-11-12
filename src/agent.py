@@ -1,5 +1,8 @@
 from helper_classes import Pair, Ocean
 import numpy as np
+import functools
+
+
 
 class Agent:
     """
@@ -15,6 +18,15 @@ class Agent:
         self.position : Pair = Pair(0, 0)
         
         self.traits : Ocean = Ocean.empty()
+        
+    def __eq__(self, other):
+        """Overrides the default implementation"""
+        if isinstance(other, Agent):
+            return self.id == other.id
+        return False
+    
+    def __hash__(self):
+        return hash(self.id)
     
     # Emotion preferences (if one large, the other small)
     def calculate_distance_preference(self):
@@ -47,6 +59,19 @@ class Agent:
         Pv = fC + fE + fN
         return Pv
     
+    @functools.lru_cache(maxsize=500)
+    def d_xy(self, other : 'Agent'):
+        """Calculate the positional difference between two agents
+        """
+        return (self.position - other.position).norm()
+    
+    @functools.lru_cache(maxsize=500)
+    def d_ori(self, other : 'Agent'):
+        """Calculate the angle difference between two agents
+        """
+        return np.abs(np.arctan2(self.velocity.y, self.velocity.x)-np.arctan2(other.velocity.y, other.velocity.x))
+    
+    @functools.lru_cache(maxsize=500)
     def relationship(self, other : 'Agent', cut_xy = 50, cut_ori = np.pi / 3):
         """Are the agents in a collective relationship?
 
@@ -66,7 +91,10 @@ class Agent:
         d_ori = np.abs(np.arctan2(self.velocity.y, self.velocity.x)-np.arctan2(other.velocity.y, other.velocity.x))
         
         theta = np.exp(-(d_ori/cut_ori)**2) if d_ori >= cut_ori else 1 + np.exp(-(d_ori/cut_ori)**2)
-        share_same_goal = False # TODO how do w get this information?
+        
+        share_same_goal = 1 if self.destination == other.destination else 0 
+        # TODO check if this is philosophically correct (is destination goal?, what if destinations are very close?)
+        
         lam = 1 if share_same_goal else 0
         Wij = 1 if d_xy <= (cut_xy * theta) or lam == 1 else 0
         

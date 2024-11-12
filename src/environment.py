@@ -28,7 +28,7 @@ class Environment:
     def print(self):
         print(self.environment)
 
-    def plot(self, agents):
+    def plot_discrete(self, agents):
         agents_pos = np.array([np.array([int(round(a.position.x)), int(round(a.position.y))]) for a in agents])
 
         full_env = np.copy(self.environment)
@@ -39,6 +39,30 @@ class Environment:
 
         plt.imshow(full_env, cmap=cmap)
         plt.axis('off')
+        plt.show()
+        
+    def plot(self, agents, clusters_of_agents=None, with_arrows=False, arrow_scale=0.01):
+        agents_pos = np.array([np.array([a.position.x, a.position.y]) for a in agents])
+        
+        if with_arrows:
+            plt.quiver(agents_pos[:, 0], agents_pos[:, 1], [a.velocity.x * arrow_scale for a in agents],
+                    [a.velocity.y * arrow_scale for a in agents], color='blue')
+
+        if clusters_of_agents is None:
+            plt.scatter(agents_pos[:, 0], agents_pos[:, 1])
+        else:
+            _, colors = np.unique(clusters_of_agents, return_inverse=True)
+            plt.scatter(agents_pos[:, 0], agents_pos[:, 1], c=colors, cmap="plasma")
+        
+        
+        
+        a,b = self.size
+        plt.plot([0,a],[0,0],'k')
+        plt.plot([0,a],[b,b],'k')
+        plt.plot([0,0],[0,b],'k')
+        plt.plot([a,a],[0,b],'k')
+
+    
         plt.show()
 
 
