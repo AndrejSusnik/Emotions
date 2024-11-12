@@ -70,5 +70,5 @@ class Agent:
         lam = 1 if share_same_goal else 0
         Wij = 1 if d_xy <= (cut_xy * theta) or lam == 1 else 0
         
-        return d_xy, d_ori, Wij
-        
+        # return d_xy, d_ori, Wij
+        return Wij        

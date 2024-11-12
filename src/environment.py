@@ -12,9 +12,12 @@ env_map = {
 
 class Environment:
     def __init__(self, filename: str):
+        """
+        Reads the environment from a file
+        """
         load_dotenv()
-        filename = f'{os.getenv('ENVIRONMENTS_PATH')}/{filename}'
-        with open(filename, 'r') as file:
+        filepath = f"{os.getenv('ENVIRONMENTS_PATH')}/{filename}"
+        with open(filepath, 'r') as file:
             self.environment = np.array([np.array([env_map[char] for char in row.strip()]) for row in file.readlines()])
 
         self.size = self.environment.shape
@@ -26,7 +29,7 @@ class Environment:
         print(self.environment)
 
     def plot(self, agents):
-        agents_pos = np.array([np.array([a.position.x, a.position.y]) for a in agents])
+        agents_pos = np.array([np.array([int(round(a.position.x)), int(round(a.position.y))]) for a in agents])
 
         full_env = np.copy(self.environment)
         for pos in agents_pos:

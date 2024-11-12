@@ -48,7 +48,7 @@ class Simulation:
             that is number of relationships with other agents ("degree of the node")
         """
         
-        ro = np.sum(self.relationship_matrix[agent0.id,:,2])
+        ro = np.sum(self.relationship_matrix[agent0.id,:])
         return ro            
 
     def run(self):
