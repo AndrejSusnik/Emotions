@@ -40,14 +40,16 @@ class Simulation:
             for j, agent1 in enumerate(self.agents):
                 self.relationship_matrix[i, j] = agent0.relationship(agent1)
                 self.relationship_matrix[j, i] = self.relationship_matrix[i, j]
+
+    #Ali razširimo to funkcijo ali pa dodamo novo za clustering
             
     def collective_density(self, agent0: Agent):
         """Calculate the collective density of the agent
             that is number of relationships with other agents ("degree of the node")
         """
         
-        ro = np.sum(self.relationship_matrix[agent0.id,:])
-        return ro
+        ro = np.sum(self.relationship_matrix[agent0.id,:,2])
+        return ro            
 
     def run(self):
         self.environment.plot(self.agents)
