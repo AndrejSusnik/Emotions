@@ -22,8 +22,8 @@ class Environment:
 
         self.size = self.environment.shape
 
-    def get_valid_positions(self) -> set[tuple[int, int]]:
-        return set(zip(*np.where(self.environment == 2)))
+    # def get_valid_positions(self) -> set[tuple[int, int]]:
+    #     return set(zip(*np.where(self.environment == 2)))
     
     def print(self):
         print(self.environment)
@@ -52,7 +52,7 @@ class Environment:
             plt.scatter(agents_pos[:, 0], agents_pos[:, 1])
         else:
             _, colors = np.unique(clusters_of_agents, return_inverse=True)
-            plt.scatter(agents_pos[:, 0], agents_pos[:, 1], c=colors, cmap="plasma")
+            plt.scatter(agents_pos[:, 0], agents_pos[:, 1], c=colors, cmap="hsv")
         
         
         

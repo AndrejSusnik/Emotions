@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 from agent import Agent
 from environment import Environment
@@ -20,19 +21,16 @@ class Simulation:
         self.agents = []
         self.environment = params.environment
 
-        valid_positions = self.environment.get_valid_positions()
-
         # Example initialization
         for i in range(params.num_agents):
             a = Agent(i)
             a.traits = Ocean.sample(params.oceanDistribution)
-            while True:
-                a.position = Pair(np.random.randint(self.environment.size[0]), np.random.randint(self.environment.size[1]))
-                if a.position.get() in valid_positions:
-                    valid_positions.remove(a.position.get())
-                    break
+            a.source = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1])
+            a.position = a.source
+            a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1])
+ 
 
-            a.velocity = Pair(np.random.randint(-5, 5), np.random.randint(-5, 5))
+            a.velocity = Pair(random.random() *10 -5, random.random() *10 -5) # random.random(-5, 5)
             self.agents.append(a)
             
         # self.relationship_matrix = np.zeros((len(self.agents), len(self.agents)))
@@ -60,8 +58,9 @@ class Simulation:
         """
         neighbour, distance = -1, None
         for agent in self.agents:
-            if agent0.relationship(agent) and\
-                self.collective_density(agent0) < self.collective_density(agent):
+            # TODO maybe use different distribution for agent initialization than uniform
+            if agent0.relationship(agent) == 1:
+                if self.collective_density(agent0) < self.collective_density(agent):
                     distance_ = (agent0.position - agent.position).norm()
                     if distance is None or distance_ < distance:
                         neighbour = agent
@@ -86,23 +85,44 @@ class Simulation:
             else:
                 clusters_of_agents[agent.id] = agent.id
         print(clusters_of_agents)
-        # TODO does this work correctly?
+        # TODO does this work correctly? it is a bit random, maybe combining more iterations the thing is in average stable
         return clusters_of_agents
+    
+    def labels_to_clusters(clusters_of_agents: list[int]) -> list[set[int]]:
+        """Alternative representaion of clusters ex. [{0,3},{1,2,4}]"""
+        d = {}
+        for i, cluster_label in enumerate(clusters_of_agents):
+            if cluster_label in d:
+                d[cluster_label].add(i)
+            else:
+                d[cluster_label] = set([i])
+        sets = d.values()
+        return sets
+
+    def contagion_of_emotion_preferences(self, clusters: list[set[int]]):
+        """Update the emotion preferences (distance Pd, velocity Pv) of the agent based on the cluster he is in
+        """
+        # prev_Pds = [agent.distance_preference for agent in self.agents]
+        # prev_Pvs = [agent.velocity_preference for agent in self.agents]
         
-        # # Alternative implementation -> list[set[int]]
-        # d = {}
-        # for i, cluster_label in enumerate(clusters_of_agents):
-        #     if cluster_label in d:
-        #         d[cluster_label].add(i)
-        #     else:
-        #         d[cluster_label] = set([i])
-        # return d.values()
-        
+        # for cluster in clusters:
+        #     cluster = list(cluster)
+        #     if len(cluster) == 1:
+        #         continue
+        #     for i in cluster:
+        #         agent = self.agents[i]
+        #         # TODO implement
+        #         # Pd = ...
+        #         # Pv = ..
+        #         # agent.distance_preference = Pd
+        #         # agent.velocity_preference = Pv
+        pass
         
     
         
         
 
     def run(self):
+        # self.environment.plot(self.agents)
         clusters_of_agents = self.clusters()
-        self.environment.plot(self.agents, clusters_of_agents)
+        self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)

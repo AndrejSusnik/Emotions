@@ -7,6 +7,9 @@ class Pair:
 
     def get(self):
         return self.x, self.y
+    
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
      
     def __add__(self, other):
         return Pair(self.x + other.x, self.y + other.y)

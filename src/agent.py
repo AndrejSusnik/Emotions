@@ -10,26 +10,28 @@ class Agent:
     """
     def __init__(self, id: int):
         self.id = id
-        self.source : Pair = Pair(0, 0)
-        self.destination : Pair = Pair(0, 0)
+        self.source : Pair = Pair(None, None)
+        self.destination : Pair = Pair(None, None)
         
         # motion features
-        self.velocity : Pair = Pair(0, 0)
-        self.position : Pair = Pair(0, 0)
+        self.velocity : Pair = Pair(None, None)
+        self.position : Pair = Pair(None, None)
         
         self.traits : Ocean = Ocean.empty()
+        self.distance_preference = self.calculate_init_distance_preference()
+        self.velocity_preference = self.calculate_init_velocity_preference()
         
     def __eq__(self, other):
         """Overrides the default implementation"""
         if isinstance(other, Agent):
-            return self.id == other.id
+            return self.id == other.id and self.position == other.position
         return False
     
     def __hash__(self):
-        return hash(self.id)
+        return hash(str(self.id) + str(self.position.x)+ str(self.position.y))
     
     # Emotion preferences (if one large, the other small)
-    def calculate_distance_preference(self):
+    def calculate_init_distance_preference(self):
         """Calculate the distance preference (one of emotion preferences)
         
         Returns:
@@ -44,7 +46,7 @@ class Agent:
         Pd = fO + fE + fA
         return Pd
     
-    def calculate_velocity_preference(self):
+    def calculate_init_velocity_preference(self):
         """Calculate the velocity preference (one of emotion preferences)
         
         Returns:
@@ -59,19 +61,19 @@ class Agent:
         Pv = fC + fE + fN
         return Pv
     
-    @functools.lru_cache(maxsize=500)
+    @functools.lru_cache(maxsize=5000)
     def d_xy(self, other : 'Agent'):
         """Calculate the positional difference between two agents
         """
         return (self.position - other.position).norm()
     
-    @functools.lru_cache(maxsize=500)
+    @functools.lru_cache(maxsize=5000)
     def d_ori(self, other : 'Agent'):
         """Calculate the angle difference between two agents
         """
         return np.abs(np.arctan2(self.velocity.y, self.velocity.x)-np.arctan2(other.velocity.y, other.velocity.x))
     
-    @functools.lru_cache(maxsize=500)
+    @functools.lru_cache(maxsize=5000)
     def relationship(self, other : 'Agent', cut_xy = 50, cut_ori = np.pi / 3):
         """Are the agents in a collective relationship?
 
@@ -97,6 +99,7 @@ class Agent:
         
         lam = 1 if share_same_goal else 0
         Wij = 1 if d_xy <= (cut_xy * theta) or lam == 1 else 0
+        
         
         # return d_xy, d_ori, Wij
         return Wij        
