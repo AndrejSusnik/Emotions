@@ -48,7 +48,7 @@ git clone git@github.com:AndrejSusnik/Emotions.git
 
 Then, navigate to the project folder:
 ```bash
-
+cd Emotions
 ```
 
 In the src folder create .env file with the following content:
@@ -57,12 +57,12 @@ In the src folder create .env file with the following content:
 ```
 
 
-Create virtual environment and install the required packages:
+Install the required packages:
 ```bash
-
+python3 -m pip install -r requirements.txt
 ```
 
 To run the project, run the following command:
 ```bash
-
+python3 src/main.py
 ```
