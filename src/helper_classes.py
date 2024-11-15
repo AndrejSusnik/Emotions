@@ -4,6 +4,9 @@ class Pair:
     def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
+    
+    def __str__(self):
+        return f"Pair({self.x}, {self.y})"
 
     def get(self):
         return self.x, self.y

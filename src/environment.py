@@ -12,30 +12,111 @@ env_map = {
     ' ': 2   # Empty space
 }
 
+
+class Line:
+    def __init__(self, start: Pair, end: Pair):
+        self.start = start
+        self.end = end
+
+    def __str__(self):
+        return f"Line({self.start}, {self.end})"
+
+    def norm(self, p: Pair):
+        self.start.x = self.start.x / p.x
+        self.start.y = self.start.y / p.y
+
+        self.end.x = self.end.x / p.x
+        self.end.y = self.end.y / p.y
+
+        return self
+
+    def scale(self, p: Pair):
+        self.start.x = self.start.x * p.x
+        self.start.y = self.start.y * p.y
+
+        self.end.x = self.end.x * p.x
+        self.end.y = self.end.y * p.y
+
+        return self
+
+
 class Environment:
-    def __init__(self, filename: str):
+    def __init__(self, filename: str, size: Pair):
         """
         Reads the environment from a file
         """
         load_dotenv()
         filepath = f"{os.getenv('ENVIRONMENTS_PATH')}/{filename}"
         with open(filepath, 'r') as file:
-            self.environment = np.array([np.array([env_map[char] for char in row.strip()]) for row in file.readlines()])
+            self.environment = np.array(
+                [np.array([env_map[char] for char in row.strip()]) for row in file.readlines()])
 
-        self.size = self.environment.shape
+        #  extract the exits and walls in relative coordinates
+        self.exits: list[Line] = []
+        self.walls: list[Line] = []
+
+        for i in range(self.environment.shape[1]):
+            wall_started = False
+            wall_start = None
+            for j in range(self.environment.shape[0]):
+                if (self.environment[j, i] == 0) and not wall_started:
+                    wall_started = True
+                    wall_start = Pair(i, j)
+
+                if wall_start and (self.environment[j, i] != 0):
+                    if (not (wall_start.x == i and wall_start.y == j-1)):
+                        self.walls.append(Line(wall_start, Pair(i, j)))
+                    wall_started = False
+                    wall_start = None
+
+                if self.environment[j, i] == 1:
+                    self.exits.append(Line(Pair(i, j), Pair(i, j)))
+
+            if wall_started and wall_start and (not (wall_start.x == i and wall_start.y == self.environment.shape[0]-1)):
+                self.walls.append(
+                    Line(wall_start, Pair(i, self.environment.shape[0])))
+
+        for i in range(self.environment.shape[0]):
+            wall_started = False
+            wall_start = None
+            for j in range(self.environment.shape[1]):
+                if (self.environment[i, j] == 0) and not wall_started:
+                    wall_started = True
+                    wall_start = Pair(j, i)
+
+                if wall_start and (self.environment[i, j] != 0):
+                    if (not (wall_start.x == j-1 and wall_start.y == i)):
+                        self.walls.append(Line(wall_start, Pair(j, i)))
+                    wall_started = False
+                    wall_start = None
+
+            if wall_started and wall_start and (not (wall_start.x == self.environment.shape[1]-1 and wall_start.y == i)):
+                self.walls.append(
+                    Line(wall_start, Pair(self.environment.shape[1], i)))
+
+        self.exits = list(set(self.exits))
+
+        self.exits = list(map(lambda x: x.norm(Pair(self.environment.shape[1], self.environment.shape[0])).scale(size), self.exits))
+        self.walls = list(map(lambda x: x.norm(Pair(self.environment.shape[1], self.environment.shape[0])).scale(size), self.walls))
+
+        for wall in self.walls:
+            print(wall)
+
+        self.size = np.array([size.x, size.y]) 
 
     # def get_valid_positions(self) -> set[tuple[int, int]]:
     #     return set(zip(*np.where(self.environment == 2)))
-    
+
     def is_valid_position(self, position: Pair) -> bool:
-        xx,yy = self.size
-        return 0 <= position.x  and position.x < xx and 0 <= position.y and position.y < yy
-    
+        xx, yy = self.size
+        return 0 <= position.x and position.x < xx and 0 <= position.y and position.y < yy
+
     def print(self):
         print(self.environment)
 
     def plot_discrete(self, agents):
-        agents_pos = np.array([np.array([int(round(a.position.x)), int(round(a.position.y))]) for a in agents])
+        agents_pos = np.array(
+            [np.array([int(round(a.position.x)), int(round(a.position.y))]) for a in agents])
 
         full_env = np.copy(self.environment)
         for pos in agents_pos:
@@ -46,31 +127,38 @@ class Environment:
         plt.imshow(full_env, cmap=cmap)
         plt.axis('off')
         plt.show()
-        
+
     def plot(self, agents, clusters_of_agents=None, with_arrows=False, arrow_scale=0.01):
-        agents_pos = np.array([np.array([a.position.x, a.position.y]) for a in agents])
-        
+        agents_pos = np.array(
+            [np.array([a.position.x, a.position.y]) for a in agents])
+
         if with_arrows:
             plt.quiver(agents_pos[:, 0], agents_pos[:, 1], [a.velocity.x * arrow_scale for a in agents],
-                    [a.velocity.y * arrow_scale for a in agents], color='blue')
+                       [a.velocity.y * arrow_scale for a in agents], color='blue')
 
         if clusters_of_agents is None:
             plt.scatter(agents_pos[:, 0], agents_pos[:, 1])
         else:
             _, colors = np.unique(clusters_of_agents, return_inverse=True)
             print(colors)
-            plt.scatter(agents_pos[:, 0], agents_pos[:, 1], c=colors+1, cmap="plasma")
+            plt.scatter(agents_pos[:, 0], agents_pos[:,
+                        1], c=colors+1, cmap="plasma")
             plt.colorbar()
-        
-        
-        
-        a,b = self.size
-        plt.plot([0,a],[0,0],'k')
-        plt.plot([0,a],[b,b],'k')
-        plt.plot([0,0],[0,b],'k')
-        plt.plot([a,a],[0,b],'k')
 
-    
+
+        # plot the exits
+        for exit in self.exits:
+            plt.plot([exit.start.x, exit.end.x], [exit.start.y, exit.end.y], 'g')
+
+        # plot the walls
+
+        for wall in self.walls:
+            plt.plot([wall.start.x, wall.end.x], [wall.start.y, wall.end.y], 'k')
+        
+        # a, b = self.size
+        # plt.plot([0, a], [0, 0], 'k')
+        # plt.plot([0, a], [b, b], 'k')
+        # plt.plot([0, 0], [0, b], 'k')
+        # plt.plot([a, a], [0, b], 'k')
+
         plt.show()
-
-
