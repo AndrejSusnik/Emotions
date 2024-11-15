@@ -17,31 +17,63 @@ class Simulation:
     """
     Environment class: environment initialization, emotion-to-path mapping, (local collision avoidance, crowd simulation)
     """
-    def __init__(self, params: SimulationParams):
+    def __init__(self, params: SimulationParams, mode = "uniform"):
         self.agents = []
         self.environment = params.environment
 
-        # Example initialization
-        for i in range(params.num_agents):
-            a = Agent(i)
-            a.traits = Ocean.sample(params.oceanDistribution)
-            a.source = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1])
-            a.position = a.source
-            a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1])
- 
+        if mode == "uniform":
+            # Example initialization
+            for i in range(params.num_agents):
+                a = Agent(i)
+                a.traits = Ocean.sample(params.oceanDistribution)
+                a.source = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1])
+                a.position = a.source
+                a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1])
+    
 
-            a.velocity = Pair(random.random() *10 -5, random.random() *10 -5) # random.random(-5, 5)
-            self.agents.append(a)
+                a.velocity = Pair(random.random() *10 -5, random.random() *10 -5) # random.random(-5, 5)
+                self.agents.append(a)
+                
+             
+        elif mode == "multimodal":
+            centers = [Pair(2,15),Pair(8,7)]  # Example centers
+
+            for i in range(params.num_agents):
+                a = Agent(i)
+                a.traits = Ocean.sample(params.oceanDistribution)
+                
+                # Select a random center
+                center = random.choice(centers)
+                
+                while True:
+                
+                    # Gaussian sampling around the selected center
+                    x = np.random.normal(loc=center.x, scale=2)  # 10 is the standard deviation for x
+                    y = np.random.normal(loc=center.y, scale=2)  # 10 is the standard deviation for y
+                    
+                    if self.environment.is_valid_position(Pair(x, y)):
+                        a.source = Pair(x, y)
+                        a.position = a.source
+                        break
+
+
+                # Destination sampled independently
+                dest_center = random.choice(centers)
+                while True:
+                    dest_x = np.random.normal(loc=dest_center.x, scale=2)
+                    dest_y = np.random.normal(loc=dest_center.y, scale=2)
+                    if self.environment.is_valid_position(Pair(dest_x, dest_y)):
+                        a.destination = Pair(dest_x, dest_y)
+                        break
+
+                # Velocity remains uniformly random
+                a.velocity = Pair(random.random() * 10 - 5, random.random() * 10 - 5)
+                
+                self.agents.append(a)
             
-        # self.relationship_matrix = np.zeros((len(self.agents), len(self.agents)))
-        # for i, agent0 in enumerate(self.agents):
-        #     for j, agent1 in enumerate(self.agents):
-        #         self.relationship_matrix[i, j] = agent0.relationship(agent1)
-        #         self.relationship_matrix[j, i] = self.relationship_matrix[i, j]
+        
                 
         
-
-    #Ali razširimo to funkcijo ali pa dodamo novo za clustering
             
     def collective_density(self, agent0: Agent) -> int:
         """Calculate the collective density of the agent

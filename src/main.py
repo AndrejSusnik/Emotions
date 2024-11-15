@@ -9,5 +9,5 @@ if __name__ == '__main__':
 
     sim_params = SimulationParams(num_agents=50, oceanDistribution=oceanDistribution, environment=environment)
 
-    sim = Simulation(sim_params)
+    sim = Simulation(sim_params,mode="multimodal")
     sim.run()

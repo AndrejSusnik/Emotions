@@ -4,6 +4,8 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors  # Import colors from matplotlib
 
+from helper_classes import Pair
+
 env_map = {
     'w': 0,  # Wall
     'e': 1,  # Exit
@@ -24,6 +26,10 @@ class Environment:
 
     # def get_valid_positions(self) -> set[tuple[int, int]]:
     #     return set(zip(*np.where(self.environment == 2)))
+    
+    def is_valid_position(self, position: Pair) -> bool:
+        xx,yy = self.size
+        return 0 <= position.x  and position.x < xx and 0 <= position.y and position.y < yy
     
     def print(self):
         print(self.environment)
@@ -52,7 +58,9 @@ class Environment:
             plt.scatter(agents_pos[:, 0], agents_pos[:, 1])
         else:
             _, colors = np.unique(clusters_of_agents, return_inverse=True)
-            plt.scatter(agents_pos[:, 0], agents_pos[:, 1], c=colors, cmap="hsv")
+            print(colors)
+            plt.scatter(agents_pos[:, 0], agents_pos[:, 1], c=colors+1, cmap="plasma")
+            plt.colorbar()
         
         
         
