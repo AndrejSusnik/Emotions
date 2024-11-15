@@ -27,6 +27,19 @@ class Pair:
     def __repr__(self):
         return f"({round(self.x,1)}, {round(self.y,1)})"
     
+    def __ge__(self, other):
+        if self.x > other.x:
+            return True
+        if self.x < other.x:
+            return False
+        return self.y >= other.y
+    
+    def __lt__(self, other):
+        return not self >= other
+    
+    def __hash__(self):
+        return hash((self.x, self.y))
+    
     def norm(self):
         return np.sqrt(self.x ** 2 + self.y ** 2)
     

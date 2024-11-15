@@ -30,8 +30,8 @@ class Agent:
             return self.id == other.id and self.position == other.position
         return False
     
-    def _str_(self):
-        return f"Agent {self.id} at {self.position}, distance preference: {self.distance_preference}, velocity preference: {self.velocity_preference}"
+    # def _str_(self):
+    #     return f"Agent {self.id} at {self.position}, distance preference: {self.distance_preference}, velocity preference: {self.velocity_preference}"
     
     def __repr__(self):
         return f"Agent {self.id} at {self.position}, distance preference: {self.distance_preference}, velocity preference: {self.velocity_preference}"

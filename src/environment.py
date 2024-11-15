@@ -38,6 +38,9 @@ class Line:
         self.end.y = self.end.y * p.y
 
         return self
+    
+    def center(self):
+        return Pair((self.start.x + self.end.x) / 2, (self.start.y + self.end.y) / 2)
 
 
 class Environment:
@@ -142,7 +145,7 @@ class Environment:
     
     def is_valid_position(self, position: Pair) -> bool:
         xx, yy = self.size
-        return 0 <= position.x and position.x < xx and 0 <= position.y and position.y < yy
+        return 0 <= position.x and position.x <= xx and 0 <= position.y and position.y <= yy
 
     def print(self):
         print(self.environment)
@@ -151,7 +154,12 @@ class Environment:
         agents_pos = np.array(
             [np.array([int(round(a.position.x)), int(round(a.position.y))]) for a in agents])
 
-        full_env = np.copy(self.environment)
+        # full_env = np.copy(self.environment)
+        # print(self.environment) # TODO its the 10x10 one, not 100x100 ??
+        
+      
+        full_env = np.zeros(self.size + 1)
+        # print(full_env.shape)
         for pos in agents_pos:
             full_env[pos[0], pos[1]] = 3
 

@@ -20,28 +20,22 @@ class Simulation:
     def __init__(self, params: SimulationParams, mode = "uniform"):
         self.agents = []
         self.environment = params.environment
+        self.destinations = [(line.start.round(), line.center().round(), line.end.round()) for line in self.environment.exits]
+        # TODO append all the points of the line
 
-        if mode == "uniform":
-            # Example initialization
-            for i in range(params.num_agents):
-                a = Agent(i)
-                a.traits = Ocean.sample(params.oceanDistribution)
+        
+        # Example initialization
+        for i in range(params.num_agents):
+            a = Agent(i)
+            a.traits = Ocean.sample(params.oceanDistribution)
+            
+            if mode == "uniform":
                 a.source = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1]).round()
                 a.position = a.source
-                a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1]).round()
-    
-
-                a.velocity = Pair(random.random() *10 -5, random.random() *10 -5) # random.random(-5, 5)
-                self.agents.append(a)
+            # a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1]).round()
+            elif mode == "multimodal":
                 
-             
-        elif mode == "multimodal":
-            centers = [Pair(2,15),Pair(8,7)]  # Example centers
-
-            for i in range(params.num_agents):
-                a = Agent(i)
-                a.traits = Ocean.sample(params.oceanDistribution)
-                
+                centers = [Pair(2,15),Pair(8,7)]  # Example centers
                 # Select a random center
                 center = random.choice(centers)
                 
@@ -55,24 +49,15 @@ class Simulation:
                         a.source = p
                         a.position = a.source
                         break
-
-
-                # Destination sampled independently
-                dest_center = random.choice(centers)
-                while True:
-                    dest_x = np.random.normal(loc=dest_center.x, scale=2)
-                    dest_y = np.random.normal(loc=dest_center.y, scale=2)
-                    p = Pair(dest_x, dest_y).round()
-                    if self.environment.is_valid_position(p):
-                        a.destination = p
-                        break
-
-                # Velocity remains uniformly random
-                a.velocity = Pair(random.random() * 10 - 5, random.random() * 10 - 5)
-                
-                self.agents.append(a)
+                    
             
+            # go to nearest exit
+            # _, a.destination = min([((a.position - destination).norm(), destination) for destination in self.destinations])
+
+            a.velocity = Pair(random.random() *10 -5, random.random() *10 -5) # random.random(-5, 5)
+            self.agents.append(a)
         
+        self.navigation_graphs = self.init_navigation_graphs()
                 
         
             
@@ -145,12 +130,12 @@ class Simulation:
                 continue
             for i in cluster:
                 agent = self.agents[i]
-                
+                EPSI = 1e-11 # to avoid division by zero
                 # (contagion inside cluster) + (contagion from contagious sources ex. fire)
-                dPd = sum([np.exp((prev_Pds[j] - prev_Pds[i])/agent.d_xy(self.agents[j])) for j in cluster if j != i]) \
-                    + sum([np.exp(prev_Pds[i]/((agent.position - contagious_source).norm())) for contagious_source in self.environment.contagious_sources])
-                dPv = sum([np.exp((prev_Pvs[j] - prev_Pvs[i])/agent.d_xy(self.agents[j])) for j in cluster if j != i]) \
-                    + sum([np.exp(prev_Pvs[i]/((agent.position - contagious_source).norm())) for contagious_source in self.environment.contagious_sources])
+                dPd = sum([np.exp((prev_Pds[j] - prev_Pds[i])/(agent.d_xy(self.agents[j])+ EPSI)) for j in cluster if j != i]) \
+                    + sum([np.exp(prev_Pds[i]/((agent.position - contagious_source).norm() + EPSI)) for contagious_source in self.environment.contagious_sources])
+                dPv = sum([np.exp((prev_Pvs[j] - prev_Pvs[i])/(agent.d_xy(self.agents[j])+ EPSI)) for j in cluster if j != i]) \
+                    + sum([np.exp(prev_Pvs[i]/((agent.position - contagious_source).norm() + EPSI)) for contagious_source in self.environment.contagious_sources])
                 
                 # selective perception
                 # (distance preseption ... - distance to destination)
@@ -166,7 +151,80 @@ class Simulation:
                 agent.distance_preference = prev_Pds[i] + dPd * wd + Cd
                 agent.velocity_preference = prev_Pvs[i] + dPv * wv + Cv
 
+    def init_navigation_graphs(self):
+        # maybe this gets more interesting when there are more rooms
+        grids = dict()
+        for destination in self.destinations:
+            print(destination)
+            # grid = np.zeros(self.environment.size + 1)
+            grid = [[0] * (self.environment.size[1] + 1) for _ in range(self.environment.size[0] + 1)]
+            # h = grid.shape[1] #hight
+            h = len(grid[0])
+            
+            # start at destination and perform BFS to write names of the parents in the grid cells
+            # grid[destination.x, h - destination.y] = -1
+            queue = []
+            for point in destination:
+                grid[point.x][point.y] = None
+                queue.append([point,0])
+                
+            while len(queue) > 0:
+                current, length = queue.pop(0)
+                for delta in [Pair(0,1), Pair(0,-1), Pair(1,0), Pair(-1,0)]:
+                    new = current + delta
+                    # print(new)
+                    if self.environment.is_valid_position(new) and isinstance(grid[new.x][new.y], int):
+                        grid[new.x][new.y] = (current, length)
+                        queue.append((new, length + 1))
+            for line in grid:
+                print(line)
+                
+            grids[destination] = grid
+                
+       
+        
+        return grids
     
+    def density_of_destination(self, destination: tuple[Pair]) -> int:
+        # TODO
+        return 0
+    
+    def select_path(self):
+        # if we choose a destination, the path is selected, as there is only one shortest path in the navigation graph of this destination
+        densities_of_destinations = [self.density_of_destination(destination) for destination in self.destinations]
+        agent_destination_id = None
+        max_score = None
+        for agent in self.agents:        
+            for i, destination in enumerate(self.destinations):
+                grid = self.navigation_graphs[destination]
+                current = agent.position
+                length = grid[current.x][current.y][1]
+                density = densities_of_destinations[i]
+                
+                desired_velocity_of_agent = Pair(5,5) # TODO what is this and init in init (i think i doesn not influence the argmin)
+                
+                # item exp is the adjustment factor for the desired velocity .
+                # The larger den will lead the vel to get smaller, the crowded path will
+                #   require more time to arrive at the destination
+                
+                score = length / (desired_velocity_of_agent.norm() * np.exp(-(density * (agent.velocity_preference+1)/ (agent.distance_preference+1))**2 ))
+                if max_score is None or score > max_score:
+                    max_score = score
+                    agent_destination_id = i
+        
+        # update the position according to the selected path
+        # TODO the velocity is not considered??
+        # TODO what should be destination? a line maybe? refactor
+        # TODO save the destination(id) to agent so that relationship works
+        agent.position = self.navigation_graphs[agent_destination_id][agent.position.x][agent.position.y][0]
+            
+                
+                
+                
+            
+            
+            
+        
         
         
 
@@ -174,6 +232,9 @@ class Simulation:
         # self.environment.plot(self.agents)
         clusters_of_agents = self.clusters()
         self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
+        self.environment.plot_discrete(self.agents)
         print(str(self.agents[0]))
         self.contagion_of_emotion_preferences(Simulation.labels_to_clusters(clusters_of_agents))
         print(str(self.agents[0]))
+        
+        self.init_navigation_graphs()
