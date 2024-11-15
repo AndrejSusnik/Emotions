@@ -132,6 +132,14 @@ class Environment:
 
         self.size = np.array([size.x, size.y])
 
+        self.size = self.environment.shape
+        
+        # self.contagious_sources = []
+        self.contagious_sources = [Pair(0,0)] # ex. fire at position 0,0
+
+    # def get_valid_positions(self) -> set[tuple[int, int]]:
+    #     return set(zip(*np.where(self.environment == 2)))
+    
     def is_valid_position(self, position: Pair) -> bool:
         xx, yy = self.size
         return 0 <= position.x and position.x < xx and 0 <= position.y and position.y < yy

@@ -120,6 +120,7 @@ class Simulation:
         # TODO does this work correctly? it is a bit random, maybe combining more iterations the thing is in average stable
         return clusters_of_agents
     
+    @staticmethod
     def labels_to_clusters(clusters_of_agents: list[int]) -> list[set[int]]:
         """Alternative representaion of clusters ex. [{0,3},{1,2,4}]"""
         d = {}
@@ -134,22 +135,36 @@ class Simulation:
     def contagion_of_emotion_preferences(self, clusters: list[set[int]]):
         """Update the emotion preferences (distance Pd, velocity Pv) of the agent based on the cluster he is in
         """
-        # prev_Pds = [agent.distance_preference for agent in self.agents]
-        # prev_Pvs = [agent.velocity_preference for agent in self.agents]
+        prev_Pds = [agent.distance_preference for agent in self.agents]
+        prev_Pvs = [agent.velocity_preference for agent in self.agents]
         
-        # for cluster in clusters:
-        #     cluster = list(cluster)
-        #     if len(cluster) == 1:
-        #         continue
-        #     for i in cluster:
-        #         agent = self.agents[i]
-        #         # TODO implement
-        #         # Pd = ...
-        #         # Pv = ..
-        #         # agent.distance_preference = Pd
-        #         # agent.velocity_preference = Pv
-        pass
-        
+        for cluster in clusters:
+            cluster = list(cluster)
+            if len(cluster) == 1:
+                continue
+            for i in cluster:
+                agent = self.agents[i]
+                
+                # (contagion inside cluster) + (contagion from contagious sources ex. fire)
+                dPd = sum([np.exp((prev_Pds[j] - prev_Pds[i])/agent.d_xy(self.agents[j])) for j in cluster if j != i]) \
+                    + sum([np.exp(prev_Pds[i]/((agent.position - contagious_source).norm())) for contagious_source in self.environment.contagious_sources])
+                dPv = sum([np.exp((prev_Pvs[j] - prev_Pvs[i])/agent.d_xy(self.agents[j])) for j in cluster if j != i]) \
+                    + sum([np.exp(prev_Pvs[i]/((agent.position - contagious_source).norm())) for contagious_source in self.environment.contagious_sources])
+                
+                # selective perception
+                # (distance preseption ... - distance to destination)
+                # (velocity perception ... - velocity)
+                wd = np.exp(-0.05 * (agent.position - agent.destination).norm())
+                wv = np.exp(-2 * agent.velocity.norm())
+                
+                Cd = agent.init_distance_preference * 0.1
+                Cv = agent.init_velocity_preference * 0.1
+                    
+                # TODO suspicious, we get very high values (ex. 2 => 55), ok, if it will settle here after some iterations
+                # TODO Above Pd there is a line in the article, but it is not clear what it means 
+                agent.distance_preference = prev_Pds[i] + dPd * wd + Cd
+                agent.velocity_preference = prev_Pvs[i] + dPv * wv + Cv
+
     
         
         
@@ -158,3 +173,6 @@ class Simulation:
         # self.environment.plot(self.agents)
         clusters_of_agents = self.clusters()
         self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
+        print(str(self.agents[0]))
+        self.contagion_of_emotion_preferences(Simulation.labels_to_clusters(clusters_of_agents))
+        print(str(self.agents[0]))

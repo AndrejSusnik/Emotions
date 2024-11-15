@@ -24,6 +24,9 @@ class Pair:
     def __mul__(self, other):
         return self.x * other.x + self.y * other.y
     
+    def __repr__(self):
+        return f"({round(self.x,1)}, {round(self.y,1)})"
+    
     def norm(self):
         return np.sqrt(self.x ** 2 + self.y ** 2)
 

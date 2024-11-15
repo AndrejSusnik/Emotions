@@ -18,14 +18,24 @@ class Agent:
         self.position : Pair = Pair(None, None)
         
         self.traits : Ocean = Ocean.empty()
-        self.distance_preference = self.calculate_init_distance_preference()
-        self.velocity_preference = self.calculate_init_velocity_preference()
+        self.init_distance_preference = self.calculate_init_distance_preference()
+        self.init_velocity_preference = self.calculate_init_velocity_preference()
+        
+        self.distance_preference = self.init_distance_preference
+        self.velocity_preference = self.init_velocity_preference
         
     def __eq__(self, other):
         """Overrides the default implementation"""
         if isinstance(other, Agent):
             return self.id == other.id and self.position == other.position
         return False
+    
+    def _str_(self):
+        return f"Agent {self.id} at {self.position}, distance preference: {self.distance_preference}, velocity preference: {self.velocity_preference}"
+    
+    def __repr__(self):
+        return f"Agent {self.id} at {self.position}, distance preference: {self.distance_preference}, velocity preference: {self.velocity_preference}"
+    
     
     def __hash__(self):
         return hash(str(self.id) + str(self.position.x)+ str(self.position.y))
