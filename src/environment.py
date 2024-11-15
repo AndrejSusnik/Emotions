@@ -58,6 +58,9 @@ class Environment:
         for i in range(self.environment.shape[1]):
             wall_started = False
             wall_start = None
+
+            exit_started = False
+            exit_start = None
             for j in range(self.environment.shape[0]):
                 if (self.environment[j, i] == 0) and not wall_started:
                     wall_started = True
@@ -65,20 +68,30 @@ class Environment:
 
                 if wall_start and (self.environment[j, i] != 0):
                     if (not (wall_start.x == i and wall_start.y == j-1)):
-                        self.walls.append(Line(wall_start, Pair(i, j)))
+                        self.walls.append(Line(wall_start, Pair(i, j - 1)))
                     wall_started = False
                     wall_start = None
 
-                if self.environment[j, i] == 1:
-                    self.exits.append(Line(Pair(i, j), Pair(i, j)))
+                if self.environment[j, i] == 1 and not exit_started:
+                    exit_started = True
+                    exit_start = Pair(i, j)
+                
+                if exit_start and (self.environment[j, i] != 1):
+                    if (not (exit_start.x == i and exit_start.y == j-1)):
+                        self.exits.append(Line(Pair(exit_start.x, exit_start.y - 1), Pair(i, j)))
+                    exit_started = False
+                    exit_start = None
 
             if wall_started and wall_start and (not (wall_start.x == i and wall_start.y == self.environment.shape[0]-1)):
                 self.walls.append(
-                    Line(wall_start, Pair(i, self.environment.shape[0])))
+                    Line(wall_start, Pair(i, self.environment.shape[0] - 1)))
 
         for i in range(self.environment.shape[0]):
             wall_started = False
-            wall_start = None
+            wall_start = None   
+            exit_started = False
+            exit_start = None
+ 
             for j in range(self.environment.shape[1]):
                 if (self.environment[i, j] == 0) and not wall_started:
                     wall_started = True
@@ -86,26 +99,38 @@ class Environment:
 
                 if wall_start and (self.environment[i, j] != 0):
                     if (not (wall_start.x == j-1 and wall_start.y == i)):
-                        self.walls.append(Line(wall_start, Pair(j, i)))
+                        self.walls.append(Line(wall_start, Pair(j - 1, i)))
                     wall_started = False
                     wall_start = None
 
+                if self.environment[i, j] == 1 and not exit_started:
+                    exit_started = True
+                    exit_start = Pair(j, i)
+
+                if exit_start and (self.environment[i, j] != 1):
+                    if (not (exit_start.x == j-1 and exit_start.y == i)):
+                        self.exits.append(Line(Pair(exit_start.x - 1, exit_start.y), Pair(j, i)))
+                    exit_started = False
+                    exit_start = None
+
             if wall_started and wall_start and (not (wall_start.x == self.environment.shape[1]-1 and wall_start.y == i)):
                 self.walls.append(
-                    Line(wall_start, Pair(self.environment.shape[1], i)))
+                    Line(wall_start, Pair(self.environment.shape[1] - 1, i)))
 
-        self.exits = list(set(self.exits))
 
-        self.exits = list(map(lambda x: x.norm(Pair(self.environment.shape[1], self.environment.shape[0])).scale(size), self.exits))
-        self.walls = list(map(lambda x: x.norm(Pair(self.environment.shape[1], self.environment.shape[0])).scale(size), self.walls))
-
-        for wall in self.walls:
+        print("Wals")
+        for wall    in self.walls:
             print(wall)
+        print("exits")
+        for exit in self.exits:
+            print(exit)
 
-        self.size = np.array([size.x, size.y]) 
+        self.exits = list(map(lambda x: x.norm(Pair(
+            self.environment.shape[1] - 1, self.environment.shape[0] - 1)).scale(size), self.exits))
+        self.walls = list(map(lambda x: x.norm(Pair(
+            self.environment.shape[1] - 1, self.environment.shape[0] - 1)).scale(size), self.walls))
 
-    # def get_valid_positions(self) -> set[tuple[int, int]]:
-    #     return set(zip(*np.where(self.environment == 2)))
+        self.size = np.array([size.x, size.y])
 
     def is_valid_position(self, position: Pair) -> bool:
         xx, yy = self.size
@@ -145,16 +170,15 @@ class Environment:
                         1], c=colors+1, cmap="plasma")
             plt.colorbar()
 
-
-        # plot the exits
+        # plot the exits 
         for exit in self.exits:
-            plt.plot([exit.start.x, exit.end.x], [exit.start.y, exit.end.y], 'g')
-
-        # plot the walls
+            plt.plot([exit.start.x, exit.end.x], [
+                     exit.start.y, exit.end.y], 'r')
 
         for wall in self.walls:
-            plt.plot([wall.start.x, wall.end.x], [wall.start.y, wall.end.y], 'k')
-        
+            plt.plot([wall.start.x, wall.end.x], [
+                     wall.start.y, wall.end.y], 'k')
+
         # a, b = self.size
         # plt.plot([0, a], [0, 0], 'k')
         # plt.plot([0, a], [b, b], 'k')
