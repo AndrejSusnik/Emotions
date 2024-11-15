@@ -14,28 +14,31 @@ planning. Realistic and plausible simulation of crowd path planning and crowd be
 
   
 ## Starting Point:
-Emotion Contagion Model for Dynamical Crowd Path Planning: Yunpeng Wu et al. [link](https://doi.org/10.53941/ijndi.2024.100014)
+Emotion Contagion Model for Dynamical Crowd Path Planning: Yunpeng Wu et al. available at [https://doi.org/10.53941/ijndi.2024.100014](https://doi.org/10.53941/ijndi.2024.100014).
 
 ## Project stages
 * First (26.11.2024)
-Working simulation (simplified redo of the article), room, maybe not all parameters, collision avoidance (optional).
-Initial project structure: Agent class, Environment class (room), Main class (visualization)
 
-DONE:
-calculate_distance_preference(Agent)
-calculate_velocity_preference(Agent)
-(is in) relationship(Agent, Agent) TODO
-collective_density(Agent in Environment)
+    - Working simulation (simplified redo of the article), room, maybe not all parameters, collision avoidance (optional).
+    - Initial project structure: Agent class, Environment class (room), Main class (visualization)
+
+    - REALIZED: visualization, basic structure, clustering, contagion of preferences
+
+
 
 
 * Second (7.12.2024)
-Working simulation from the article. Parallelize agent computations.
+
+    - Working simulation from the article.
+    - Parallelize agent computations.
 
 * Final (11.1.2025)
-Add parameter of panic (=> agressivness) to agents (slows down evacuation)
-Use historic data of agent ... (max agressivness until now)
-Working simulation
-Screens from simulation, and all traces
+
+    - Add parameter of panic to agents (slows down evacuation)
+    - Use historic data of agent (max agressivness until now)
+    - Working simulation
+    - Screens from simulation, and all traces
+    - Try out different clustering method
 
 
 ## Running the project
@@ -53,7 +56,7 @@ cd Emotions
 
 In the src folder create .env file with the following content:
 ```bash
-    ENVIRONMENTS_PATH=path/to/environments
+ENVIRONMENTS_PATH=path/to/environments
 ```
 
 
