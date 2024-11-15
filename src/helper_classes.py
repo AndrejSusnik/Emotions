@@ -29,6 +29,9 @@ class Pair:
     
     def norm(self):
         return np.sqrt(self.x ** 2 + self.y ** 2)
+    
+    def round(self):
+        return Pair(int(round(self.x)), int(round(self.y)))
 
 class OceanDistribution:
     def __init__(self, openness: Pair, conscientiousness: Pair, extroversion: Pair, agreeableness: Pair, neuroticism: Pair):

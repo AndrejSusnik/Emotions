@@ -26,9 +26,9 @@ class Simulation:
             for i in range(params.num_agents):
                 a = Agent(i)
                 a.traits = Ocean.sample(params.oceanDistribution)
-                a.source = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1])
+                a.source = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1]).round()
                 a.position = a.source
-                a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1])
+                a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1]).round()
     
 
                 a.velocity = Pair(random.random() *10 -5, random.random() *10 -5) # random.random(-5, 5)
@@ -50,9 +50,9 @@ class Simulation:
                     # Gaussian sampling around the selected center
                     x = np.random.normal(loc=center.x, scale=2)  # 10 is the standard deviation for x
                     y = np.random.normal(loc=center.y, scale=2)  # 10 is the standard deviation for y
-                    
-                    if self.environment.is_valid_position(Pair(x, y)):
-                        a.source = Pair(x, y)
+                    p = Pair(x, y).round()
+                    if self.environment.is_valid_position(p):
+                        a.source = p
                         a.position = a.source
                         break
 
@@ -62,8 +62,9 @@ class Simulation:
                 while True:
                     dest_x = np.random.normal(loc=dest_center.x, scale=2)
                     dest_y = np.random.normal(loc=dest_center.y, scale=2)
-                    if self.environment.is_valid_position(Pair(dest_x, dest_y)):
-                        a.destination = Pair(dest_x, dest_y)
+                    p = Pair(dest_x, dest_y).round()
+                    if self.environment.is_valid_position(p):
+                        a.destination = p
                         break
 
                 # Velocity remains uniformly random

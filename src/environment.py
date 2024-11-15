@@ -132,7 +132,7 @@ class Environment:
 
         self.size = np.array([size.x, size.y])
 
-        self.size = self.environment.shape
+        # self.size = self.environment.shape
         
         # self.contagious_sources = []
         self.contagious_sources = [Pair(0,0)] # ex. fire at position 0,0
