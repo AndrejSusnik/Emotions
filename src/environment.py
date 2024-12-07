@@ -121,13 +121,6 @@ class Environment:
                     Line(wall_start, Pair(self.environment.shape[1] - 1, i)))
 
 
-        print("Wals")
-        for wall    in self.walls:
-            print(wall)
-        print("exits")
-        for exit in self.exits:
-            print(exit)
-
         self.exits = list(map(lambda x: x.norm(Pair(
             self.environment.shape[1] - 1, self.environment.shape[0] - 1)).scale(size), self.exits))
         self.walls = list(map(lambda x: x.norm(Pair(

@@ -22,6 +22,7 @@ class Simulation:
         self.environment = params.environment
         self.destinations = [(line.start.round(), line.center().round(), line.end.round()) for line in self.environment.exits]
         # TODO append all the points of the line
+        self.params = params
 
         
         # Example initialization
@@ -217,15 +218,6 @@ class Simulation:
         # TODO what should be destination? a line maybe? refactor
         # TODO save the destination(id) to agent so that relationship works
         agent.position = self.navigation_graphs[agent_destination_id][agent.position.x][agent.position.y][0]
-            
-                
-                
-                
-            
-            
-            
-        
-        
         
 
     def run(self):
@@ -233,8 +225,13 @@ class Simulation:
         clusters_of_agents = self.clusters()
         self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
         self.environment.plot_discrete(self.agents)
-        print(str(self.agents[0]))
         self.contagion_of_emotion_preferences(Simulation.labels_to_clusters(clusters_of_agents))
-        print(str(self.agents[0]))
-        
+
         self.init_navigation_graphs()
+
+
+        num_steps = int(self.params.simulation_time_in_seconds / self.params.dt)
+
+        for i in range(num_steps):
+            pass
+            
