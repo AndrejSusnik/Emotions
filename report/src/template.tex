@@ -96,7 +96,7 @@ The \textit{Emotion Contagion Model for Dynamical Crowd Path Planning} article w
     \label{fig:outline}
 \end{figure}
 
-The source article proposes generating agents with distinct values for the five OCEAN traits: openness to experience, conscientiousness, extroversion, agreeableness, and neuroticism. Based on those factors, agents are then assigned an initial distance preference ${P_d}$ and an initial velocity preference ${P_v}$. Agents have larger distance preferences if their personality factors are simple, aggressive, and fragile (corresponding to OCEAN factors: O${-}$, E${-}$, A${+}$), and agents have larger velocity preferences if their personality factors are variable, energetic, and functional (corresponding to OCEAN factors: C${-}$, E${+}$, N${+}$). If an agent has a large distance preference, its velocity preference is usually smaller, and vice versa. An agent with a larger velocity preference will seek to find less crowded paths even at the cost of the distance being longer, while those with a larger distance preference will stick to a path even as it becomes crowded \cite{Wu_Huang_Tian_Yan_Yu_2024}.
+The source article proposes generating agents with distinct values for the five OCEAN traits: openness to experience, conscientiousness, extroversion, agreeableness, and neuroticism. Based on those factors, agents are then assigned an initial distance preference ${P_d}$ and an initial velocity preference ${P_v}$. Agents have larger distance preferences if their personality factors are simple, aggressive, and fragile (corresponding to OCEAN factors: O${-}$, E${-}$, A${+}$), and agents have larger velocity preferences if their personality factors are variable, energetic, and functional (corresponding to OCEAN factors: C${-}$, E${+}$, N${+}$). If an agent has a large distance preference, its velocity preference is usually smaller, and vice versa. An agent with a larger velocity preference will seek to find less crowded paths even at the cost of the distance being longer, while those with a larger distance preference will stick to a path even as it becomes crowded. An emotion contagion mechanism further enhances the model by allowing emotional states to spread among neighboring agents, mimicking the way emotions such as stress or calm influence a group. A dampening factor regulates this contagion to ensure an agent's inherent personality traits are at least partially preserved. The model incorporates a strategy where a least expected-time objective function is used to dynamically select paths, factoring in both environmental variables and agents’ emotional states and preferences \cite{Wu_Huang_Tian_Yan_Yu_2024}.
 
 The other aspect of the article is the emotion contagion. For that purpose, the simulation requires a method to define collective clusters among the agents to determine which of them will be mutually affected. Agents are defined as being collective neighbors if they share similar motion and have a mutual goal. Information is contagious between neighboring agents in the same group and is affected by the distance between agents and the difference between emotion preferences. Additionally, agents may be affected by environmental contagious sources, such as a fire disaster \cite{Wu_Huang_Tian_Yan_Yu_2024}.  
 
@@ -104,15 +104,17 @@ The \textit{Simulation of crowd dynamics in pedestrian evacuation concerning pan
 The authors propose a model where panic is contagious and it negatively impacts the ability of the agent to find an exit.\cite{Wang_2022}
 \subsection{Proposed improvements}
 % Emotion memory
-We propose adding an additional \textbf{Emotion memory} parameter to the agents. The emotion memory parameter would affect the agent on a multi-run simulation where the same agents would be placed in different environments in sequence.
+% We propose adding an additional \textbf{Emotion memory} parameter to the agents. The emotion memory parameter would affect the agent on a multi-run simulation where the same agents would be placed in different environments in sequence.
 
 
 A second improvement that we propose is adding \textbf{Panic contagion} to the simulation. Each agent would have a panic parameter and a panic susceptibility parameter, where panic inhibits the ability of the agent to move to its goal. As the panic parameter increases, the agent movement would become more and more random.
 
-It would also be possible to explore how the clustering algorithm described in the article performs when compared to generalized community detection algorithms, such as Leiden, Walktrap, or (Fast) Label Propagation.
+It would also be possible to explore how the \textbf{clustering algorithm} described in the article performs when compared to generalized community detection algorithms, such as Leiden, Walktrap, or (Fast) Label Propagation.
+
+% We plan to test how the grid resolution affects the movement of agents.
 
 
-We believe to have found an error in the source article with its equation: \begin{equation*}
+We believe to have found \textbf{an error in the source article} with its equation: \begin{equation*}
     d_{ori}(i,j)=|arccos(vel_i)-arccos(vel_j)|
 \end{equation*}
 which does not appear to be a operation that can be performed on a vector, so we instead propose: \begin{equation*}
@@ -133,6 +135,15 @@ We have implemented a basic simulation showing the effects of the clustering alg
     \includegraphics[width=0.3\linewidth]{fig/Figure_4.png}
     \caption{Example runs of clustering according to association with the closest neighbor with a higher degree. The implementation is currently slightly unstable, but it may suffice for the purpose of emotion contagion. The leftmost sub-figure represents agents with positions initialized uniformly, while the two to the right represent agents with positions initialized with a bimodal Gaussian distribution.}
     \label{fig:enter-label}
+\end{figure}
+
+For each exit we constructed a graph of shortest paths, called navigation graph. Every such graph is a tree or a forest with roots among the nodes belonging to an exit. Graph represents shortest paths from all possible positions on the grid to one of the exits. An example graph is shown in the Figure \ref{fig:spgraph}.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.5\linewidth]{fig/spgraph.png}
+    \caption{Example navigation graph for a grid of dimensions 4 times 6. Yellow nodes represent an exit of width 2.}
+    \label{fig:spgraph}
 \end{figure}
 
 % DISCUSSION
