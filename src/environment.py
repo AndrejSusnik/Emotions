@@ -44,7 +44,7 @@ class Line:
 
 
 class Environment:
-    def __init__(self, filename: str, size: Pair):
+    def __init__(self, filename: str, size_in_meters: Pair, tile_size_in_meters: Pair):
         """
         Reads the environment from a file
         """
@@ -53,6 +53,9 @@ class Environment:
         with open(filepath, 'r') as file:
             self.environment = np.array(
                 [np.array([env_map[char] for char in row.strip()]) for row in file.readlines()])
+
+        self.size_in_meters = size_in_meters
+        self.tile_size_in_meters = tile_size_in_meters
 
         #  extract the exits and walls in relative coordinates
         self.exits: list[Line] = []
@@ -120,6 +123,8 @@ class Environment:
                 self.walls.append(
                     Line(wall_start, Pair(self.environment.shape[1] - 1, i)))
 
+
+        size = Pair(round(size_in_meters.x / tile_size_in_meters.x), round(size_in_meters.y / tile_size_in_meters.y))
 
         self.exits = list(map(lambda x: x.norm(Pair(
             self.environment.shape[1] - 1, self.environment.shape[0] - 1)).scale(size), self.exits))

@@ -54,8 +54,8 @@ class Simulation:
             
             # go to nearest exit
             # _, a.destination = min([((a.position - destination).norm(), destination) for destination in self.destinations])
-
-            a.velocity = Pair(random.random() *10 -5, random.random() *10 -5) # random.random(-5, 5)
+            # TODO reasonable values
+            a.velocity = Pair(random.random() *10, random.random() *10) # random.random(-5, 5)
             self.agents.append(a)
         
         self.navigation_graphs = self.init_navigation_graphs()
@@ -91,7 +91,7 @@ class Simulation:
         """For every agent, there is the number of its cluster ex. [9,0,3,3,9]
         """
         collective_densities = np.array([self.collective_density(agent) for agent in self.agents])
-        agent_ids = np.flip(np.argsort(collective_densities)) # indexes of agents by escending density
+        agent_ids = np.flip(np.argsort(collective_densities)) # indexes of agents by descending density
         
         clusters_of_agents = [None] * len(self.agents)
         
@@ -181,21 +181,36 @@ class Simulation:
                 print(line)
                 
             grids[destination] = grid
-                
+
+        self.navigation_graphs = grids   
        
         
         return grids
     
-    def density_of_destination(self, destination: tuple[Pair]) -> int:
-        # TODO
-        return 0
+    def get_densities(self):
+        # scan in the radious that is 2,5 times the size of the destination
+        densities = []
+        for destination in self.destinations:
+            # scan some radius back, and count the agents in the radius
+            radious_in_tiles = (destination[2] - destination[0]).scale(2.5)
+            density = 0
+            for agent in self.agents:
+                # check if agent.position is inside the radious starting from destination[1]
+                if (agent.position - destination[1]).norm() < radious_in_tiles.norm():
+                    density += 1
+            densities.append(density / len(self.agents))
+             
+        return densities
+            
     
     def select_path(self):
         # if we choose a destination, the path is selected, as there is only one shortest path in the navigation graph of this destination
-        densities_of_destinations = [self.density_of_destination(destination) for destination in self.destinations]
+        # densities_of_destinations = [self.density_of_destination(destination) for destination in self.destinations]
+        densities_of_destinations = self.get_densities()
         agent_destination_id = None
-        max_score = None
         for agent in self.agents:        
+            agent_destination_id = 0
+            max_score = None
             for i, destination in enumerate(self.destinations):
                 grid = self.navigation_graphs[destination]
                 current = agent.position
@@ -212,26 +227,49 @@ class Simulation:
                 if max_score is None or score > max_score:
                     max_score = score
                     agent_destination_id = i
+                    agent.destination = destination
+                    
+            # update the position according to the selected path
+            speed = int(round(agent.velocity.norm())) # number of nodes to go in one step
+            # prev_position = Pair(agent.position.x, agent.position.y)
+            for i in range(speed):
+                agent.position = self.navigation_graphs[agent.destination][agent.position.x][agent.position.y][0]
+                
+            # move = (agent.position - prev_position)
+            # agent.velocity = (move.scale(1/move.norm())).scale(speed)
         
-        # update the position according to the selected path
-        # TODO the velocity is not considered??
+        
         # TODO what should be destination? a line maybe? refactor
         # TODO save the destination(id) to agent so that relationship works
-        agent.position = self.navigation_graphs[agent_destination_id][agent.position.x][agent.position.y][0]
+        
+        
+        # TODO
+        # collision avoidance
+        # kdo ma prednost iti na neko polje ? sortiramo po agresivnosti
+        
+        
+                
+                
+                
+            
+            
+            
+        
+        
         
 
     def run(self):
-        # self.environment.plot(self.agents)
         clusters_of_agents = self.clusters()
         self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
-        self.environment.plot_discrete(self.agents)
+        # self.environment.plot_discrete(self.agents)
         self.contagion_of_emotion_preferences(Simulation.labels_to_clusters(clusters_of_agents))
-
+        
         self.init_navigation_graphs()
-
 
         num_steps = int(self.params.simulation_time_in_seconds / self.params.dt)
 
         for i in range(num_steps):
-            pass
-            
+            self.select_path()
+            # self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
+            self.contagion_of_emotion_preferences(Simulation.labels_to_clusters(clusters_of_agents))
+        self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)

@@ -46,6 +46,10 @@ class Pair:
     def round(self):
         return Pair(int(round(self.x)), int(round(self.y)))
 
+    def scale(self, scalar):
+        return Pair(self.x * scalar, self.y * scalar)
+
+
 class OceanDistribution:
     def __init__(self, openness: Pair, conscientiousness: Pair, extroversion: Pair, agreeableness: Pair, neuroticism: Pair):
         self.openness_dist = openness
