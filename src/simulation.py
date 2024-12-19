@@ -6,7 +6,7 @@ from environment import Environment
 from helper_classes import Pair, Ocean, OceanDistribution
 
 class SimulationParams:
-    def __init__(self, num_agents: int, oceanDistribution: OceanDistribution, environment: Environment, simulation_time_in_seconds: int = 100, dt: float = 0.1):
+    def __init__(self, num_agents: int, oceanDistribution: OceanDistribution, environment: Environment, simulation_time_in_seconds: int = 1000, dt: float = 0.1):
         self.num_agents = num_agents
         self.oceanDistribution = oceanDistribution
         self.environment = environment
@@ -19,6 +19,7 @@ class Simulation:
     """
     def __init__(self, params: SimulationParams, mode = "uniform"):
         self.agents = []
+        self.agents_at_destination: list[Agent] = []
         self.environment = params.environment
         self.destinations = [(line.start.round(), line.center().round(), line.end.round()) for line in self.environment.exits]
         # TODO append all the points of the line
@@ -103,7 +104,7 @@ class Simulation:
                 clusters_of_agents[agent.id] = clusters_of_agents[neighbour.id]
             else:
                 clusters_of_agents[agent.id] = agent.id
-        print(clusters_of_agents)
+        # print(clusters_of_agents)
         # TODO does this work correctly? it is a bit random, maybe combining more iterations the thing is in average stable
         return clusters_of_agents
     
@@ -141,7 +142,7 @@ class Simulation:
                 # selective perception
                 # (distance preseption ... - distance to destination)
                 # (velocity perception ... - velocity)
-                wd = np.exp(-0.05 * (agent.position - agent.destination).norm())
+                wd = np.exp(-0.05 * (agent.position - agent.destination[1]).norm())
                 wv = np.exp(-2 * agent.velocity.norm())
                 
                 Cd = agent.init_distance_preference * 0.1
@@ -156,7 +157,7 @@ class Simulation:
         # maybe this gets more interesting when there are more rooms
         grids = dict()
         for destination in self.destinations:
-            print(destination)
+            # print(destination)
             # grid = np.zeros(self.environment.size + 1)
             grid = [[0] * (self.environment.size[1] + 1) for _ in range(self.environment.size[0] + 1)]
             # h = grid.shape[1] #hight
@@ -177,8 +178,8 @@ class Simulation:
                     if self.environment.is_valid_position(new) and isinstance(grid[new.x][new.y], int):
                         grid[new.x][new.y] = (current, length)
                         queue.append((new, length + 1))
-            for line in grid:
-                print(line)
+            # for line in grid:
+            #     print(line)
                 
             grids[destination] = grid
 
@@ -199,7 +200,8 @@ class Simulation:
                 if (agent.position - destination[1]).norm() < radious_in_tiles.norm():
                     density += 1
             densities.append(density / len(self.agents))
-             
+            # densities.append(0.5)
+        print(densities) 
         return densities
             
     
@@ -224,38 +226,38 @@ class Simulation:
                 #   require more time to arrive at the destination
                 
                 score = length / (desired_velocity_of_agent.norm() * np.exp(-(density * (agent.velocity_preference+1)/ (agent.distance_preference+1))**2 ))
-                if max_score is None or score > max_score:
+                if max_score is None or score < max_score:
                     max_score = score
                     agent_destination_id = i
                     agent.destination = destination
+
                     
             # update the position according to the selected path
-            speed = int(round(agent.velocity.norm())) # number of nodes to go in one step
-            # prev_position = Pair(agent.position.x, agent.position.y)
+            speed = max(int(round(agent.velocity.norm() * self.params.dt)), 1)
+            prev_position = Pair(agent.position.x, agent.position.y)
+            
             for i in range(speed):
+                coord1 = agent.destination[0]
+                coord2 = agent.destination[2]
+
+                # if agent position is in between the start and end of the line
+                if coord1.x <= agent.position.x <= coord2.x and coord1.y <= agent.position.y <= coord2.y:
+                    agent.arrivied = True
+                    agent.history.append(agent.position)
+                    break
+
+                agent.history.append(agent.position)
                 agent.position = self.navigation_graphs[agent.destination][agent.position.x][agent.position.y][0]
                 
-            # move = (agent.position - prev_position)
-            # agent.velocity = (move.scale(1/move.norm())).scale(speed)
-        
-        
-        # TODO what should be destination? a line maybe? refactor
-        # TODO save the destination(id) to agent so that relationship works
-        
-        
-        # TODO
-        # collision avoidance
-        # kdo ma prednost iti na neko polje ? sortiramo po agresivnosti
-        
-        
-                
-                
-                
-            
-            
-            
-        
-        
+            move = (agent.position - prev_position)
+            agent.velocity = (move.scale(1/move.norm())).scale(agent.velocity.norm())
+        # TODO:  Visualize paths
+        for agent in self.agents:
+            if agent.arrivied:
+                self.agents_at_destination.append(agent)
+        self.agents = [agent for agent in self.agents if not agent.arrivied]
+        for i, agent in enumerate(self.agents):
+            agent.id = i
         
 
     def run(self):
@@ -271,5 +273,10 @@ class Simulation:
         for i in range(num_steps):
             self.select_path()
             # self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
+            clusters_of_agents = self.clusters()
             self.contagion_of_emotion_preferences(Simulation.labels_to_clusters(clusters_of_agents))
+            self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
+            if len(self.agents) == 0:
+                break
+
         self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)

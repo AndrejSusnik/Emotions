@@ -23,6 +23,9 @@ class Agent:
         
         self.distance_preference = self.init_distance_preference
         self.velocity_preference = self.init_velocity_preference
+         
+        self.arrivied = False
+        self.history = []
         
     def __eq__(self, other):
         """Overrides the default implementation"""
