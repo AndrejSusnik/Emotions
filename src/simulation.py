@@ -91,6 +91,8 @@ class Simulation:
     def clusters(self) -> list[int]:
         """For every agent, there is the number of its cluster ex. [9,0,3,3,9]
         """
+        if len(self.agents) == 0:
+            return []
         collective_densities = np.array([self.collective_density(agent) for agent in self.agents])
         agent_ids = np.flip(np.argsort(collective_densities)) # indexes of agents by descending density
         
@@ -216,7 +218,12 @@ class Simulation:
             for i, destination in enumerate(self.destinations):
                 grid = self.navigation_graphs[destination]
                 current = agent.position
-                length = grid[current.x][current.y][1]
+                if grid[current.x][current.y] is None:
+                    # TODO: what to do if the agent is already at the destination
+                    length = 0
+                else:
+                    length = grid[current.x][current.y][1]
+                    
                 density = densities_of_destinations[i]
                 
                 desired_velocity_of_agent = Pair(5,5) # TODO what is this and init in init (i think i doesn not influence the argmin)
@@ -250,7 +257,8 @@ class Simulation:
                 agent.position = self.navigation_graphs[agent.destination][agent.position.x][agent.position.y][0]
                 
             move = (agent.position - prev_position)
-            agent.velocity = (move.scale(1/move.norm())).scale(agent.velocity.norm())
+            move = move if move.norm() == 0 else move.scale(1/move.norm())
+            agent.velocity = (move).scale(agent.velocity.norm())
         # TODO:  Visualize paths
         for agent in self.agents:
             if agent.arrivied:
@@ -271,12 +279,12 @@ class Simulation:
         num_steps = int(self.params.simulation_time_in_seconds / self.params.dt)
 
         for i in range(num_steps):
+            if len(self.agents) == 0:
+                break
             self.select_path()
             # self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
             clusters_of_agents = self.clusters()
             self.contagion_of_emotion_preferences(Simulation.labels_to_clusters(clusters_of_agents))
             self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
-            if len(self.agents) == 0:
-                break
 
         self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)

@@ -169,7 +169,7 @@ class Environment:
 
     def plot(self, agents, clusters_of_agents=None, with_arrows=False, arrow_scale=0.01):
         agents_pos = np.array(
-            [np.array([a.position.x, a.position.y]) for a in agents])
+            [np.array([a.position.x, a.position.y]) for a in agents]).reshape(-1,2)
 
         if with_arrows:
             plt.quiver(agents_pos[:, 0], agents_pos[:, 1], [a.velocity.x * arrow_scale for a in agents],
