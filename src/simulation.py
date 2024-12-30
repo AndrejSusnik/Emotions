@@ -3,7 +3,9 @@ import random
 
 from agent import Agent
 from environment import Environment
+from exit import Exit
 from helper_classes import Pair, Ocean, OceanDistribution
+from grid_draw import plot_navigation_graph
 
 class SimulationParams:
     def __init__(self, num_agents: int, oceanDistribution: OceanDistribution, environment: Environment, simulation_time_in_seconds: int = 1000, dt: float = 0.1):
@@ -21,7 +23,8 @@ class Simulation:
         self.agents = []
         self.agents_at_destination: list[Agent] = []
         self.environment = params.environment
-        self.destinations = [(line.start.round(), line.center().round(), line.end.round()) for line in self.environment.exits]
+        # self.destinations = [(line.start.round(), line.center().round(), line.end.round()) for line in self.environment.exits]
+        self.exits = [Exit(l.start,l.end,i) for i, l in enumerate(self.environment.exits)]
         # TODO append all the points of the line
         self.params = params
 
@@ -59,7 +62,7 @@ class Simulation:
             a.velocity = Pair(random.random() *10, random.random() *10) # random.random(-5, 5)
             self.agents.append(a)
         
-        self.navigation_graphs = self.init_navigation_graphs()
+        self.navigation_graphs = self.init_navigation_graphs(plot=True)
                 
         
             
@@ -155,57 +158,72 @@ class Simulation:
                 agent.distance_preference = prev_Pds[i] + dPd * wd + Cd
                 agent.velocity_preference = prev_Pvs[i] + dPv * wv + Cv
 
-    def init_navigation_graphs(self):
+    def init_navigation_graphs(self, plot = False):
         # maybe this gets more interesting when there are more rooms
         grids = dict()
-        for destination in self.destinations:
-            # print(destination)
-            # grid = np.zeros(self.environment.size + 1)
+        for exit in self.exits:
             grid = [[0] * (self.environment.size[1] + 1) for _ in range(self.environment.size[0] + 1)]
-            # h = grid.shape[1] #hight
-            h = len(grid[0])
+            print(grid)
+            # h = len(grid[0])
             
-            # start at destination and perform BFS to write names of the parents in the grid cells
-            # grid[destination.x, h - destination.y] = -1
-            queue = []
-            for point in destination:
-                grid[point.x][point.y] = None
-                queue.append([point,0])
-                
-            while len(queue) > 0:
-                queue = sorted(queue, key = lambda x: x[1])
-                current, length = queue.pop(0)
-                deltas = [Pair(0,1), Pair(0,-1), Pair(1,0), Pair(-1,0),
+            deltas = [Pair(0,1), Pair(0,-1), Pair(1,0), Pair(-1,0),
                               Pair(1,1), Pair(1,-1), Pair(-1,1), Pair(-1,-1)]
-                random.shuffle(deltas)
+            queue = []
+            
+            
+            for current in exit.points():
+                grid[current.x][current.y] = None
                 for delta in deltas:
                     new = current + delta
-                    # print(new)
-                    if self.environment.is_valid_position(new) and isinstance(grid[new.x][new.y], int):
-                        grid[new.x][new.y] = (current, length)
-                        queue.append((new, length + delta.norm()))
-            # for line in grid:
-            #     print(line)
+                    queue.append({
+                        "position": new,
+                        "length": 0 + delta.norm(),
+                        "parent": current
+                    })
                 
-            grids[destination] = grid
+            while len(queue) > 0:
+                queue = sorted(queue, key = lambda x: x["length"])
+                d = queue.pop(0)
+                current = d["position"]
+                length = d["length"]
+                parent = d["parent"]
+                
+                if self.environment.is_valid_position(current) and isinstance(grid[current.x][current.y], int):
+                    # win for current
+                    grid[current.x][current.y] = (parent, length)
+                    
+                    random.shuffle(deltas)
+                    for delta in deltas:
+                        new = current + delta                        
+                        queue.append({
+                            "position": new,
+                            "length": length + delta.norm(),
+                            "parent": current
+                        })
+                
+            grids[exit.id] = grid
 
         self.navigation_graphs = grids   
+        
+        if plot:
+            for grid in grids.values():
+                plot_navigation_graph(grid)
        
         
         return grids
     
     def get_densities(self):
         # scan in the radious that is 2,5 times the size of the destination
-        densities = []
-        for destination in self.destinations:
+        densities = dict()
+        for exit in self.exits:
             # scan some radius back, and count the agents in the radius
-            radious_in_tiles = (destination[2] - destination[0]).scale(2.5)
+            radious_in_tiles = (exit.end - exit.start).scale(2.5)
             density = 0
             for agent in self.agents:
                 # check if agent.position is inside the radious starting from destination[1]
-                if (agent.position - destination[1]).norm() < radious_in_tiles.norm():
+                if (agent.position - exit.center()).norm() < radious_in_tiles.norm():
                     density += 1
-            densities.append(density / len(self.agents))
+            densities[exit.id] = density / len(self.agents)
             # densities.append(0.5)
         print(densities) 
         return densities
@@ -214,13 +232,13 @@ class Simulation:
     def select_path(self):
         # if we choose a destination, the path is selected, as there is only one shortest path in the navigation graph of this destination
         # densities_of_destinations = [self.density_of_destination(destination) for destination in self.destinations]
-        densities_of_destinations = self.get_densities()
-        agent_destination_id = None
+        densities_of_exits = self.get_densities()
+        # agent_exit_id = None
         for agent in self.agents:        
-            agent_destination_id = 0
+            # agent_destination_id = 0
             max_score = None
-            for i, destination in enumerate(self.destinations):
-                grid = self.navigation_graphs[destination]
+            for exit in self.exits:
+                grid = self.navigation_graphs[exit.id]
                 current = agent.position
                 if grid[current.x][current.y] is None:
                     # TODO: what to do if the agent is already at the destination
@@ -228,7 +246,7 @@ class Simulation:
                 else:
                     length = grid[current.x][current.y][1]
                     
-                density = densities_of_destinations[i]
+                density = densities_of_exits[exit.id]
                 
                 desired_velocity_of_agent = Pair(5,5) # TODO what is this and init in init (i think i doesn not influence the argmin)
                 
@@ -239,8 +257,8 @@ class Simulation:
                 score = length / (desired_velocity_of_agent.norm() * np.exp(-(density * (agent.velocity_preference+1)/ (agent.distance_preference+1))**2 ))
                 if max_score is None or score < max_score:
                     max_score = score
-                    agent_destination_id = i
-                    agent.destination = destination
+                    # agent_destination_id = i
+                    agent.destination = exit
 
                     
             # update the position according to the selected path
@@ -250,8 +268,8 @@ class Simulation:
             
             # for i in range(speed):
             while speed > 0:
-                coord1 = agent.destination[0]
-                coord2 = agent.destination[2]
+                coord1 = agent.destination.start
+                coord2 = agent.destination.end
 
                 # if agent position is in between the start and end of the line
                 if coord1.x <= agent.position.x <= coord2.x and coord1.y <= agent.position.y <= coord2.y:
@@ -260,7 +278,7 @@ class Simulation:
                     break
 
                 agent.history.append(agent.position)
-                agent.position = self.navigation_graphs[agent.destination][agent.position.x][agent.position.y][0]
+                agent.position = self.navigation_graphs[agent.destination.id][agent.position.x][agent.position.y][0]
                 
                 speed = speed - (prev_position - agent.position).norm()
                 

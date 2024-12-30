@@ -49,6 +49,35 @@ class Pair:
     def scale(self, scalar):
         return Pair(self.x * scalar, self.y * scalar)
 
+class Line:
+    def __init__(self, start: Pair, end: Pair):
+        self.start = start
+        self.end = end
+
+    def __str__(self):
+        return f"Line({self.start}, {self.end})"
+
+    def norm(self, p: Pair):
+        self.start.x = self.start.x / p.x
+        self.start.y = self.start.y / p.y
+
+        self.end.x = self.end.x / p.x
+        self.end.y = self.end.y / p.y
+
+        return self
+
+    def scale(self, p: Pair):
+        self.start.x = self.start.x * p.x
+        self.start.y = self.start.y * p.y
+
+        self.end.x = self.end.x * p.x
+        self.end.y = self.end.y * p.y
+
+        return self
+    
+    def center(self):
+        return Pair((self.start.x + self.end.x) / 2, (self.start.y + self.end.y) / 2)
+
 
 class OceanDistribution:
     def __init__(self, openness: Pair, conscientiousness: Pair, extroversion: Pair, agreeableness: Pair, neuroticism: Pair):
