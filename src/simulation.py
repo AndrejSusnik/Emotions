@@ -173,13 +173,17 @@ class Simulation:
                 queue.append([point,0])
                 
             while len(queue) > 0:
+                queue = sorted(queue, key = lambda x: x[1])
                 current, length = queue.pop(0)
-                for delta in [Pair(0,1), Pair(0,-1), Pair(1,0), Pair(-1,0)]:
+                deltas = [Pair(0,1), Pair(0,-1), Pair(1,0), Pair(-1,0),
+                              Pair(1,1), Pair(1,-1), Pair(-1,1), Pair(-1,-1)]
+                random.shuffle(deltas)
+                for delta in deltas:
                     new = current + delta
                     # print(new)
                     if self.environment.is_valid_position(new) and isinstance(grid[new.x][new.y], int):
                         grid[new.x][new.y] = (current, length)
-                        queue.append((new, length + 1))
+                        queue.append((new, length + delta.norm()))
             # for line in grid:
             #     print(line)
                 
@@ -240,10 +244,12 @@ class Simulation:
 
                     
             # update the position according to the selected path
-            speed = max(int(round(agent.velocity.norm() * self.params.dt)), 1)
+            # speed = max(int(round(agent.velocity.norm() * self.params.dt)), 1)
+            speed = agent.velocity.norm() * self.params.dt
             prev_position = Pair(agent.position.x, agent.position.y)
             
-            for i in range(speed):
+            # for i in range(speed):
+            while speed > 0:
                 coord1 = agent.destination[0]
                 coord2 = agent.destination[2]
 
@@ -255,6 +261,8 @@ class Simulation:
 
                 agent.history.append(agent.position)
                 agent.position = self.navigation_graphs[agent.destination][agent.position.x][agent.position.y][0]
+                
+                speed = speed - (prev_position - agent.position).norm()
                 
             move = (agent.position - prev_position)
             move = move if move.norm() == 0 else move.scale(1/move.norm())
