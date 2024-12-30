@@ -167,7 +167,9 @@ class Simulation:
             # h = len(grid[0])
             
             deltas = [Pair(0,1), Pair(0,-1), Pair(1,0), Pair(-1,0),
-                              Pair(1,1), Pair(1,-1), Pair(-1,1), Pair(-1,-1)]
+                              Pair(1,1), Pair(1,-1), Pair(-1,1), Pair(-1,-1),
+                              Pair(1,2), Pair(1,-2), Pair(-1,2), Pair(-1,-2),
+                              Pair(2,1), Pair(2,-1), Pair(-2,1), Pair(-2,-1)]
             queue = []
             
             
