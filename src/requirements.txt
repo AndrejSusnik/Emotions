@@ -2,3 +2,4 @@ numpy==2.1.2
 matplotlib==3.9.2
 python-dotenv==1.0.1 
 PyQt5==5.15.10
+joblib==1.4.2

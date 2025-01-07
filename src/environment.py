@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors  # Import colors from matplotlib
+from agent import Agent
 
 from helper_classes import Pair, Line
 
@@ -135,6 +136,18 @@ class Environment:
         plt.imshow(full_env, cmap=cmap)
         plt.axis('off')
         plt.show()
+
+    def plot_path(self, agents: list[Agent]):
+        # 
+        # agents[0].history
+        # plot the history of all agents
+        for agent in agents:
+            history = agent.history
+            history = np.array(
+                [np.array([int(round(a.x)), int(round(a.y))]) for a in history])
+            plt.plot(history[:, 0], history[:, 1])
+        plt.show()
+
 
     def plot(self, agents, clusters_of_agents=None, with_arrows=False, arrow_scale=0.01):
         agents_pos = np.array(

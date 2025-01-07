@@ -1,6 +1,7 @@
 from helper_classes import Pair, Ocean
 import numpy as np
 import functools
+from exit import Exit
 
 
 
@@ -11,7 +12,7 @@ class Agent:
     def __init__(self, id: int):
         self.id = id
         self.source : Pair = Pair(None, None)
-        self.destination : Pair = Pair(None, None)
+        self.destination : Exit = None
         
         # motion features
         self.velocity : Pair = Pair(None, None)
@@ -25,6 +26,7 @@ class Agent:
         self.velocity_preference = self.init_velocity_preference
          
         self.arrivied = False
+        self.colided = False
         self.history = []
         
     def __eq__(self, other):

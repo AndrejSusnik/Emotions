@@ -1,5 +1,4 @@
-from environment import Line
-from helper_classes import Pair
+from helper_classes import Pair, Line
 
 class Exit(Line):
     """Exit is a line with id, it represents an exit from the environment"""
