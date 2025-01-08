@@ -53,6 +53,7 @@ class Line:
     def __init__(self, start: Pair, end: Pair):
         self.start = start
         self.end = end
+        self.points_buf = None
 
     def __str__(self):
         return f"Line({self.start}, {self.end})"
@@ -74,10 +75,32 @@ class Line:
         self.end.y = self.end.y * p.y
 
         return self
+
+    def points(self):
+        if self.points_buf:
+            return self.points_buf
+
+        if self.start.y == self.end.y:
+            self.points_buf = [Pair(x, self.start.y).round() for x in range(int(round(self.start.x)), int(round(self.end.x)) +1)]
+        if self.start.x == self.end.x:
+            self.points_buf =[Pair(self.start.x, y).round() for y in range(int(round(self.start.y)), int(round(self.end.y)) +1)]
+
+        return self.points_buf
+        
     
     def center(self):
         return Pair((self.start.x + self.end.x) / 2, (self.start.y + self.end.y) / 2)
 
+
+class Rect:
+    def __init__(self, a: Line, b: Line, c: Line, d: Line):
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+    
+    def contains(self, p: Pair):
+        return self.a.start.x <= p.x and p.x <= self.b.start.x and self.a.start.y <= p.y and p.y <= self.c.start.y
 
 class OceanDistribution:
     def __init__(self, openness: Pair, conscientiousness: Pair, extroversion: Pair, agreeableness: Pair, neuroticism: Pair):

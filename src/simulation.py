@@ -42,10 +42,13 @@ class Simulation:
             if mode == "uniform":
                 xOffset = params.environment.size[0] * 0.1
                 yOffset = params.environment.size[1] * 0.1
-                a.source = Pair(xOffset + random.random(
-                ) * (self.environment.size[0] - 2*xOffset), yOffset + random.random() * (self.environment.size[1] - 2*yOffset)).round()
-                a.position = a.source
-                print(f"Agent {i} at {a.position}")
+                while True:
+                    a.source = Pair(xOffset + random.random(
+                    ) * (self.environment.size[0] - 2*xOffset), yOffset + random.random() * (self.environment.size[1] - 2*yOffset)).round()
+                    a.position = a.source
+                    
+                    if self.environment.is_valid_position(a.source):
+                        break
             # a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1]).round()
             elif mode == "multimodal":
 
@@ -353,7 +356,7 @@ class Simulation:
         print("Creating clusters")
         clusters_of_agents = self.clusters()
         print("Created clusters. Calculating contagion of emotion preferences")
-        # self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
+        self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
         # self.environment.plot_discrete(self.agents)
         self.contagion_of_emotion_preferences(
             Simulation.labels_to_clusters(clusters_of_agents))

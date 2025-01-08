@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors  # Import colors from matplotlib
 from agent import Agent
 
-from helper_classes import Pair, Line
+from helper_classes import Pair, Line, Rect
 
 env_map = {
     'w': 0,  # Wall
     'e': 1,  # Exit
-    ' ': 2   # Empty space
+    ' ': 2,  # Empty space
+    'o': 3   # Obstacle
 }
 
 class Environment:
@@ -30,6 +31,7 @@ class Environment:
         #  extract the exits and walls in relative coordinates
         self.exits: list[Line] = []
         self.walls: list[Line] = []
+        self.obstacles: list[Pair] = []
 
         for i in range(self.environment.shape[1]):
             wall_started = False
@@ -93,8 +95,26 @@ class Environment:
                 self.walls.append(
                     Line(wall_start, Pair(self.environment.shape[1] - 1, i)))
 
+        for i in range(self.environment.shape[0]):
+            for j in range(self.environment.shape[1]):
+                if self.environment[i, j] == 3:
+                    self.obstacles.append(Pair(j, i))
 
         size = Pair(round(size_in_meters.x / tile_size_in_meters.x), round(size_in_meters.y / tile_size_in_meters.y))
+
+        tmp_obst = []
+        # scale each obsticle 
+        scale_factor_x = round((size_in_meters.x / tile_size_in_meters.x) / (self.environment.shape[1] - 1))
+        scale_factor_y = round((size_in_meters.y / tile_size_in_meters.y) / (self.environment.shape[0] - 1))
+
+
+        for obst in self.obstacles:
+            # every obstacle becomes scale_factor_x*scale_factor_y obstacles in the scaled coordinate system
+            for i in range(scale_factor_x):
+                for j in range(scale_factor_y):
+                    tmp_obst.append(Pair(obst.x * scale_factor_x + i, obst.y * scale_factor_y + j))
+        
+        self.obstacles = tmp_obst
 
         self.exits = list(map(lambda x: x.norm(Pair(
             self.environment.shape[1] - 1, self.environment.shape[0] - 1)).scale(size), self.exits))
@@ -110,11 +130,24 @@ class Environment:
 
     # def get_valid_positions(self) -> set[tuple[int, int]]:
     #     return set(zip(*np.where(self.environment == 2)))
+
+    def scale_obstacles(self, scale: Pair):
+        # 
+        pass
     
     def is_valid_position(self, position: Pair) -> bool:
         xx, yy = self.size
-        return 0 <= position.x and position.x <= xx and 0 <= position.y and position.y <= yy
+        is_in_bounds = 0 <= position.x and position.x <= xx and 0 <= position.y and position.y <= yy
+        is_not_a_wall = True
+        # for wall in self.walls:
+        #     is_not_a_wall = is_not_a_wall and Pair(position.x, position.y) not in wall.points()
 
+        is_not_an_obstacle = True
+        for obstacle in self.obstacles:
+            is_not_an_obstacle = is_not_an_obstacle and (position.x != obstacle.x or position.y != obstacle.y)
+
+        return is_in_bounds and is_not_a_wall and is_not_an_obstacle
+    
     def print(self):
         print(self.environment)
 
@@ -149,6 +182,9 @@ class Environment:
             plt.plot([wall.start.x, wall.end.x], [
                      wall.start.y, wall.end.y], 'k')
 
+        for obstacle in self.obstacles:
+            plt.scatter(obstacle.x, obstacle.y, c='black', s=100)
+
         for agent in agents:
             history = agent.history
             history = np.array(
@@ -182,6 +218,9 @@ class Environment:
         for wall in self.walls:
             plt.plot([wall.start.x, wall.end.x], [
                      wall.start.y, wall.end.y], 'k')
+    
+        for obstacle in self.obstacles:
+            plt.scatter(obstacle.x, obstacle.y, c='black', s=100)
 
         # a, b = self.size
         # plt.plot([0, a], [0, 0], 'k')
