@@ -40,9 +40,12 @@ class Simulation:
             a.traits = Ocean.sample(params.oceanDistribution)
 
             if mode == "uniform":
-                a.source = Pair(random.random(
-                ) * self.environment.size[0], random.random() * self.environment.size[1]).round()
+                xOffset = params.environment.size[0] * 0.1
+                yOffset = params.environment.size[1] * 0.1
+                a.source = Pair(xOffset + random.random(
+                ) * (self.environment.size[0] - 2*xOffset), yOffset + random.random() * (self.environment.size[1] - 2*yOffset)).round()
                 a.position = a.source
+                print(f"Agent {i} at {a.position}")
             # a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1]).round()
             elif mode == "multimodal":
 
@@ -70,7 +73,11 @@ class Simulation:
             a.velocity = Pair(random.random() * 10, random.random() * 10)
             self.agents.append(a)
 
+        print("Initialized agents")
+        print("Number of agents: ", len(self.agents))
+        print("Initializing navigation graphs")
         self.navigation_graphs = self.init_navigation_graphs(plot=False)
+        print("Initialized navigation graphs")
 
     def collective_density(self, agent0: Agent) -> int:
         """Calculate the collective density of the agent
@@ -174,7 +181,7 @@ class Simulation:
         for exit in self.exits:
             grid = [[0] * (self.environment.size[1] + 1)
                     for _ in range(self.environment.size[0] + 1)]
-            print(grid)
+            # print(grid)
             # h = len(grid[0])
 
             deltas = [Pair(0, 1), Pair(0, -1), Pair(1, 0), Pair(-1, 0),
@@ -236,10 +243,10 @@ class Simulation:
                     density += 1
             densities[exit.id] = density / len(self.agents)
             # densities.append(0.5)
-        print(densities)
+        # print(densities)
         return densities
 
-    def calcNewPas(self, agent, densities_of_exits):
+    def calc_new_pos(self, agent, densities_of_exits):
         max_score = None
         for exit in self.exits:
             grid = self.navigation_graphs[exit.id]
@@ -273,11 +280,8 @@ class Simulation:
 
         # for i in range(speed):
         while speed > 0:
-            coord1 = agent.destination.start
-            coord2 = agent.destination.end
-
             # if agent position is in between the start and end of the line
-            if coord1.x <= agent.position.x <= coord2.x and coord1.y <= agent.position.y <= coord2.y:
+            if agent.position in agent.destination.points():
                 agent.arrivied = True
                 agent.history.append(agent.position)
                 break
@@ -293,6 +297,21 @@ class Simulation:
 
             if collision:
                 agent.position = prev_position
+                # move to random unoccupied position one step back
+
+                pos = agent.position
+                deltas = [Pair(0, 1), Pair(0, -1), Pair(1, 0), Pair(-1, 0),
+                          Pair(1, 1), Pair(1, -1), Pair(-1, 1), Pair(-1, -1),
+                          Pair(1, 2), Pair(1, -2), Pair(-1, 2), Pair(-1, -2),
+                          Pair(2, 1), Pair(2, -1), Pair(-2, 1), Pair(-2, -1)]
+                random.shuffle(deltas)
+                for delta in deltas:
+                    new_pos = pos + delta
+                    if self.environment.is_valid_position(new_pos):
+                        agent.position = new_pos
+                        break
+
+
                 agent.colided = True
                 break
 
@@ -317,7 +336,7 @@ class Simulation:
         #     self.calcNewPas(agent, densities_of_exits)
 
         t = time.time()
-        _ = Parallel(n_jobs=-1, prefer="threads")(delayed(self.calcNewPas)
+        _ = Parallel(n_jobs=-1, prefer="threads")(delayed(self.calc_new_pos)
                                                   (agent, densities_of_exits) for agent in tmp_agents)
         print(time.time() - t)
 
@@ -331,13 +350,14 @@ class Simulation:
             agent.id = i
 
     def run(self):
+        print("Creating clusters")
         clusters_of_agents = self.clusters()
+        print("Created clusters. Calculating contagion of emotion preferences")
         # self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
         # self.environment.plot_discrete(self.agents)
         self.contagion_of_emotion_preferences(
             Simulation.labels_to_clusters(clusters_of_agents))
-
-        self.init_navigation_graphs(plot=False)
+        print("Calculated contagion of emotion preferences. Calculating navigation graphs")
 
         num_steps = int(
             self.params.simulation_time_in_seconds / self.params.dt)
@@ -351,8 +371,8 @@ class Simulation:
             clusters_of_agents = self.clusters()
             self.contagion_of_emotion_preferences(
                 Simulation.labels_to_clusters(clusters_of_agents))
-            self.environment.plot(
-                self.agents, clusters_of_agents, with_arrows=True)
+            # self.environment.plot(
+            #     self.agents, clusters_of_agents, with_arrows=True)
 
         self.environment.plot(
             self.agents, clusters_of_agents, with_arrows=True)

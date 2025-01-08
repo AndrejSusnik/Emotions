@@ -5,9 +5,11 @@ from helper_classes import OceanDistribution, Pair
 
 if __name__ == '__main__':
     oceanDistribution = OceanDistribution(Pair(0.5, 0.1), Pair(0.5, 0.1), Pair(0.5, 0.1), Pair(0.5, 0.1), Pair(0.5, 0.1))
-    environment = Environment('test1.txt', size_in_meters=Pair(5,5), tile_size_in_meters=Pair(0.35, 0.35))
-
-    sim_params = SimulationParams(num_agents=20, oceanDistribution=oceanDistribution, environment=environment)
-
+    print("Creating environment")
+    environment = Environment('test1.txt', size_in_meters=Pair(50,50), tile_size_in_meters=Pair(0.5, 0.5))
+    print("Creating simulation")
+    sim_params = SimulationParams(num_agents=50, oceanDistribution=oceanDistribution, environment=environment)
     sim = Simulation(sim_params,mode="uniform")
+
+    print("Running simulation")
     sim.run()

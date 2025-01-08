@@ -141,6 +141,14 @@ class Environment:
         # 
         # agents[0].history
         # plot the history of all agents
+        for exit in self.exits:
+            plt.plot([exit.start.x, exit.end.x], [
+                     exit.start.y, exit.end.y], 'r')
+
+        for wall in self.walls:
+            plt.plot([wall.start.x, wall.end.x], [
+                     wall.start.y, wall.end.y], 'k')
+
         for agent in agents:
             history = agent.history
             history = np.array(
@@ -161,7 +169,7 @@ class Environment:
             plt.scatter(agents_pos[:, 0], agents_pos[:, 1])
         else:
             _, colors = np.unique(clusters_of_agents, return_inverse=True)
-            print(colors)
+            # print(colors)
             plt.scatter(agents_pos[:, 0], agents_pos[:,
                         1], c=colors+1, cmap="plasma")
             plt.colorbar()
