@@ -53,15 +53,15 @@ class Agent:
                        "conscientiousness": (self.traits.conscientiousness - mu),
                        "agreeableness": (self.traits.agreeableness - mu),
                        "neuroticism": (self.traits.neuroticism - mu)}
-        print("traits", [self.traits.openness, self.traits.conscientiousness, self.traits.agreeableness, self.traits.neuroticism])
-        print("norm_traits", norm_traits.values())
+        # print("traits", [self.traits.openness, self.traits.conscientiousness, self.traits.agreeableness, self.traits.neuroticism])
+        # print("norm_traits", norm_traits.values())
             
         self.panic_factor = -K[0] * norm_traits["openness"] - K[1] * norm_traits["conscientiousness"] - \
             K[2] * norm_traits["agreeableness"] + K[3] * norm_traits["neuroticism"] + 0.5
         
         # distributed N(0.5,0.1) same as other features
             
-        print(f"Agent {self.id} panic factor: {self.panic_factor}")
+        # print(f"Agent {self.id} panic factor: {self.panic_factor}")
 
     def __eq__(self, other):
         """Overrides the default implementation"""
