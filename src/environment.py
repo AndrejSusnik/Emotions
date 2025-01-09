@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors  # Import colors from matplotlib
 from agent import Agent
+import imageio
 
 from helper_classes import Pair, Line, Rect
 
@@ -13,6 +14,7 @@ env_map = {
     ' ': 2,  # Empty space
     'o': 3   # Obstacle
 }
+
 
 class Environment:
     def __init__(self, filename: str, size_in_meters: Pair, tile_size_in_meters: Pair):
@@ -53,10 +55,11 @@ class Environment:
                 if self.environment[j, i] == 1 and not exit_started:
                     exit_started = True
                     exit_start = Pair(i, j)
-                
+
                 if exit_start and (self.environment[j, i] != 1):
                     if (not (exit_start.x == i and exit_start.y == j-1)):
-                        self.exits.append(Line(Pair(exit_start.x, exit_start.y - 1), Pair(i, j)))
+                        self.exits.append(
+                            Line(Pair(exit_start.x, exit_start.y - 1), Pair(i, j)))
                     exit_started = False
                     exit_start = None
 
@@ -66,10 +69,10 @@ class Environment:
 
         for i in range(self.environment.shape[0]):
             wall_started = False
-            wall_start = None   
+            wall_start = None
             exit_started = False
             exit_start = None
- 
+
             for j in range(self.environment.shape[1]):
                 if (self.environment[i, j] == 0) and not wall_started:
                     wall_started = True
@@ -87,7 +90,8 @@ class Environment:
 
                 if exit_start and (self.environment[i, j] != 1):
                     if (not (exit_start.x == j-1 and exit_start.y == i)):
-                        self.exits.append(Line(Pair(exit_start.x - 1, exit_start.y), Pair(j, i)))
+                        self.exits.append(
+                            Line(Pair(exit_start.x - 1, exit_start.y), Pair(j, i)))
                     exit_started = False
                     exit_start = None
 
@@ -100,20 +104,23 @@ class Environment:
                 if self.environment[i, j] == 3:
                     self.obstacles.append(Pair(j, i))
 
-        size = Pair(round(size_in_meters.x / tile_size_in_meters.x), round(size_in_meters.y / tile_size_in_meters.y))
+        size = Pair(round(size_in_meters.x / tile_size_in_meters.x),
+                    round(size_in_meters.y / tile_size_in_meters.y))
 
         tmp_obst = []
-        # scale each obsticle 
-        scale_factor_x = round((size_in_meters.x / tile_size_in_meters.x) / (self.environment.shape[1] - 1))
-        scale_factor_y = round((size_in_meters.y / tile_size_in_meters.y) / (self.environment.shape[0] - 1))
-
+        # scale each obsticle
+        scale_factor_x = round(
+            (size_in_meters.x / tile_size_in_meters.x) / (self.environment.shape[1] - 1))
+        scale_factor_y = round(
+            (size_in_meters.y / tile_size_in_meters.y) / (self.environment.shape[0] - 1))
 
         for obst in self.obstacles:
             # every obstacle becomes scale_factor_x*scale_factor_y obstacles in the scaled coordinate system
             for i in range(scale_factor_x):
                 for j in range(scale_factor_y):
-                    tmp_obst.append(Pair(obst.x * scale_factor_x + i, obst.y * scale_factor_y + j))
-        
+                    tmp_obst.append(
+                        Pair(obst.x * scale_factor_x + i, obst.y * scale_factor_y + j))
+
         self.obstacles = tmp_obst
 
         self.exits = list(map(lambda x: x.norm(Pair(
@@ -124,17 +131,17 @@ class Environment:
         self.size = np.array([size.x, size.y])
 
         # self.size = self.environment.shape
-        
+
         # self.contagious_sources = []
-        self.contagious_sources = [Pair(0,0)] # ex. fire at position 0,0
+        self.contagious_sources = [Pair(0, 0)]  # ex. fire at position 0,0
 
     # def get_valid_positions(self) -> set[tuple[int, int]]:
     #     return set(zip(*np.where(self.environment == 2)))
 
     def scale_obstacles(self, scale: Pair):
-        # 
+        #
         pass
-    
+
     def is_valid_position(self, position: Pair) -> bool:
         xx, yy = self.size
         is_in_bounds = 0 <= position.x and position.x <= xx and 0 <= position.y and position.y <= yy
@@ -144,10 +151,11 @@ class Environment:
 
         is_not_an_obstacle = True
         for obstacle in self.obstacles:
-            is_not_an_obstacle = is_not_an_obstacle and (position.x != obstacle.x or position.y != obstacle.y)
+            is_not_an_obstacle = is_not_an_obstacle and (
+                position.x != obstacle.x or position.y != obstacle.y)
 
         return is_in_bounds and is_not_a_wall and is_not_an_obstacle
-    
+
     def print(self):
         print(self.environment)
 
@@ -157,8 +165,7 @@ class Environment:
 
         # full_env = np.copy(self.environment)
         # print(self.environment) # TODO its the 10x10 one, not 100x100 ??
-        
-      
+
         full_env = np.zeros(self.size + 1)
         # print(full_env.shape)
         for pos in agents_pos:
@@ -171,7 +178,7 @@ class Environment:
         plt.show()
 
     def plot_path(self, agents: list[Agent]):
-        # 
+        #
         # agents[0].history
         # plot the history of all agents
         for exit in self.exits:
@@ -192,10 +199,10 @@ class Environment:
             plt.plot(history[:, 0], history[:, 1])
         plt.show()
 
-
-    def plot(self, agents, clusters_of_agents=None, with_arrows=False, arrow_scale=0.01):
+    def plot(self, agents, clusters_of_agents=None, with_arrows=False, arrow_scale=0.01, save=False, step=None):
+        plt.close()
         agents_pos = np.array(
-            [np.array([a.position.x, a.position.y]) for a in agents]).reshape(-1,2)
+            [np.array([a.position.x, a.position.y]) for a in agents]).reshape(-1, 2)
 
         if with_arrows:
             plt.quiver(agents_pos[:, 0], agents_pos[:, 1], [a.velocity.x * arrow_scale for a in agents],
@@ -210,7 +217,7 @@ class Environment:
                         1], c=colors+1, cmap="plasma")
             plt.colorbar()
 
-        # plot the exits 
+        # plot the exits
         for exit in self.exits:
             plt.plot([exit.start.x, exit.end.x], [
                      exit.start.y, exit.end.y], 'r')
@@ -218,7 +225,7 @@ class Environment:
         for wall in self.walls:
             plt.plot([wall.start.x, wall.end.x], [
                      wall.start.y, wall.end.y], 'k')
-    
+
         for obstacle in self.obstacles:
             plt.scatter(obstacle.x, obstacle.y, c='black', s=100)
 
@@ -227,5 +234,26 @@ class Environment:
         # plt.plot([0, a], [b, b], 'k')
         # plt.plot([0, 0], [0, b], 'k')
         # plt.plot([a, a], [0, b], 'k')
+        #
+        # format step to 4 digits
+        if step:
+            step = str(step + 1).zfill(4)
 
-        plt.show()
+
+        if save:
+            plt.savefig(f"plots/plot_{step}.png")
+        else:
+            plt.show()
+
+    def create_gif(self):
+        # create gif from plots in plots folder
+        print("Creating gif")
+        filenames = [filename for filename in os.listdir('plots')]
+        filenames.sort()
+        images = []
+        for filename in filenames:
+            images.append(imageio.imread(f'plots/{filename}'))
+
+        imageio.mimsave('test.gif', images, 'GIF', loop=1, duration=1, fps=1)
+        print("Gif created")
+

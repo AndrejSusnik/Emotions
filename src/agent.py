@@ -57,7 +57,8 @@ class Agent:
         # print("norm_traits", norm_traits.values())
             
         self.panic_factor = -K[0] * norm_traits["openness"] - K[1] * norm_traits["conscientiousness"] - \
-            K[2] * norm_traits["agreeableness"] + K[3] * norm_traits["neuroticism"] + 0.5
+            K[2] * norm_traits["agreeableness"] + K[3] * norm_traits["neuroticism"] + 0.1
+        self.panic_factor = np.clip(self.panic_factor, 0, 1)
         
         # distributed N(0.5,0.1) same as other features
             

@@ -8,15 +8,17 @@ from helper_classes import Pair, Ocean, OceanDistribution
 from grid_draw import plot_navigation_graph
 from joblib import Parallel, delayed
 import time
+import os
 
 
 class SimulationParams:
-    def __init__(self, num_agents: int, oceanDistribution: OceanDistribution, environment: Environment, simulation_time_in_seconds: int = 1000, dt: float = 0.1):
+    def __init__(self, num_agents: int, oceanDistribution: OceanDistribution, environment: Environment, create_gif = False, simulation_time_in_seconds: int = 1000, dt: float = 0.1):
         self.num_agents = num_agents
         self.oceanDistribution = oceanDistribution
         self.environment = environment
         self.simulation_time_in_seconds = simulation_time_in_seconds
         self.dt = dt
+        self.create_gif = False
 
 
 class Simulation:
@@ -47,7 +49,7 @@ class Simulation:
                     a.source = Pair(xOffset + random.random(
                     ) * (self.environment.size[0] - 2*xOffset), yOffset + random.random() * (self.environment.size[1] - 2*yOffset)).round()
                     a.position = a.source
-                    
+
                     if self.environment.is_valid_position(a.source):
                         break
             # a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1]).round()
@@ -152,18 +154,34 @@ class Simulation:
         for cluster in clusters:
             cluster = list(cluster)
             if len(cluster) == 1:
+                agent = self.agents[0]
+                # depending on the panic_factor user should move to the cluster average
+                agent.current_panic = agent.current_panic * 0.05
+                print("Agent panic factor: ", agent.current_panic)
+
                 continue
 
-            average_panic = sum([self.agents[i].current_panic for i in cluster]) / len(self.agents)
+            average_panic = sum(
+                [self.agents[i].current_panic for i in cluster]) / len(self.agents)
 
             for i in cluster:
 
                 agent = self.agents[i]
                 # depending on the panic_factor user should move to the cluster average
                 panic_diff = average_panic - agent.current_panic
-                ave_dist = sum([(agent.position - con_s).norm() for con_s in self.environment.contagious_sources]) / len(self.environment.contagious_sources)
+                ave_dist = 1 / ((sum([(agent.position - con_s).norm() for con_s in self.environment.contagious_sources]) / len(
+                    self.environment.contagious_sources)) + 1e-11)
 
-                agent.current_panic = agent.panic_factor * panic_diff + ave_dist * agent.panic_factor * 10e-2
+                if agent.current_panic < 0.8 * agent.panic_factor:
+                    agent.current_panic += ave_dist * agent.panic_factor * 10e-2
+                elif agent.current_panic > agent.panic_factor:
+                    agent.current_panic -= (agent.current_panic -
+                                            agent.panic_factor) * 0.3
+
+                agent.current_panic += agent.panic_factor * panic_diff * 0.05
+                agent.current_panic = max(0, min(1, agent.current_panic))
+
+
 
                 EPSI = 1e-11  # to avoid division by zero
                 # (contagion inside cluster) + (contagion from contagious sources ex. fire)
@@ -292,8 +310,37 @@ class Simulation:
         speed = agent.velocity.norm() * self.params.dt
         prev_position = Pair(agent.position.x, agent.position.y)
 
+        deltas = [Pair(0, 1), Pair(0, -1), Pair(1, 0), Pair(-1, 0),
+                  Pair(1, 1), Pair(1, -1), Pair(-1, 1), Pair(-1, -1),
+                  Pair(1, 2), Pair(1, -2), Pair(-1, 2), Pair(-1, -2),
+                  Pair(2, 1), Pair(2, -1), Pair(-2, 1), Pair(-2, -1)]
+
+        move_random = False
+
+        num = random.random()
+        if num < agent.current_panic:
+            move_random = True
+
+        if move_random:
+            while True:
+                pos = agent.position
+                random.shuffle(deltas)
+                for delta in deltas:
+                    new_pos = pos + delta
+                    collision = False
+                    for other_agent in self.agents:
+                        if other_agent.position == agent.position and other_agent.id != agent.id:
+                            collision = True
+                    if self.environment.is_valid_position(new_pos) and not collision:
+                        agent.position = new_pos
+                        break
+                break
+            if agent.position in agent.destination.points():
+                agent.arrivied = True
+                agent.history.append(agent.position)
+
         # for i in range(speed):
-        while speed > 0:
+        while speed > 0 and (not move_random):
             # if agent position is in between the start and end of the line
             if agent.position in agent.destination.points():
                 agent.arrivied = True
@@ -314,17 +361,12 @@ class Simulation:
                 # move to random unoccupied position one step back
 
                 pos = agent.position
-                deltas = [Pair(0, 1), Pair(0, -1), Pair(1, 0), Pair(-1, 0),
-                          Pair(1, 1), Pair(1, -1), Pair(-1, 1), Pair(-1, -1),
-                          Pair(1, 2), Pair(1, -2), Pair(-1, 2), Pair(-1, -2),
-                          Pair(2, 1), Pair(2, -1), Pair(-2, 1), Pair(-2, -1)]
                 random.shuffle(deltas)
                 for delta in deltas:
                     new_pos = pos + delta
                     if self.environment.is_valid_position(new_pos):
                         agent.position = new_pos
                         break
-
 
                 agent.colided = True
                 break
@@ -364,10 +406,15 @@ class Simulation:
             agent.id = i
 
     def run(self):
+        # delete all the files in plots folder
+        for file in os.listdir("plots"):
+            os.remove(os.path.join("plots", file))
+        
         print("Creating clusters")
         clusters_of_agents = self.clusters()
         print("Created clusters. Calculating contagion of emotion preferences")
-        self.environment.plot(self.agents, clusters_of_agents, with_arrows=True)
+        self.environment.plot(
+            self.agents, clusters_of_agents, with_arrows=True)
         # self.environment.plot_discrete(self.agents)
         self.contagion_of_emotion_preferences(
             Simulation.labels_to_clusters(clusters_of_agents))
@@ -385,12 +432,12 @@ class Simulation:
             clusters_of_agents = self.clusters()
             self.contagion_of_emotion_preferences(
                 Simulation.labels_to_clusters(clusters_of_agents))
-            # self.environment.plot(
-            #     self.agents, clusters_of_agents, with_arrows=True)
+            self.environment.plot(
+                self.agents, clusters_of_agents, with_arrows=False, save=True, step=i)
 
         self.environment.plot(
             self.agents, clusters_of_agents, with_arrows=True)
         self.environment.plot_path(self.agents_at_destination)
 
-        for agent in self.agents_at_destination:
-            print(f"{agent.current_panic}")
+        self.environment.create_gif()
+
