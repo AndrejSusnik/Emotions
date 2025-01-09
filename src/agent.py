@@ -1,6 +1,7 @@
 from helper_classes import Pair, Ocean
 import numpy as np
 import functools
+import scipy
 from exit import Exit
 
 
@@ -43,9 +44,24 @@ class Agent:
         # K = [ko, kc, ka, kn]
         # Norm(K, 2) = 1
         K = [0.1, 0.1, 0.1, 0.1]
-
-        self.panic_factor = -K[0] * self.traits.openness - K[1] * self.traits.conscientiousness - \
-            K[2] * self.traits.agreeableness + K[3] * self.traits.neuroticism
+        K = K / np.linalg.norm(K, 2)
+        
+        # normalize traits
+        mu = 0.5
+        # sig = 0.1
+        norm_traits = {"openness": (self.traits.openness - mu),
+                       "conscientiousness": (self.traits.conscientiousness - mu),
+                       "agreeableness": (self.traits.agreeableness - mu),
+                       "neuroticism": (self.traits.neuroticism - mu)}
+        print("traits", [self.traits.openness, self.traits.conscientiousness, self.traits.agreeableness, self.traits.neuroticism])
+        print("norm_traits", norm_traits.values())
+            
+        self.panic_factor = -K[0] * norm_traits["openness"] - K[1] * norm_traits["conscientiousness"] - \
+            K[2] * norm_traits["agreeableness"] + K[3] * norm_traits["neuroticism"] + 0.5
+        
+        # distributed N(0.5,0.1) same as other features
+            
+        print(f"Agent {self.id} panic factor: {self.panic_factor}")
 
     def __eq__(self, other):
         """Overrides the default implementation"""

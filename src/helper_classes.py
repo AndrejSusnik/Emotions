@@ -147,3 +147,10 @@ class Ocean:
     @staticmethod
     def empty():
         return Ocean(0, 0, 0, 0, 0)
+    
+    def __str__(self):
+        #round to k places
+        k = 3
+        return f"OCEAN({round(self.openness, k)}, {round(self.conscientiousness, k)}, {round(self.extroversion, k)}, {round(self.agreeableness, k)}, {round(self.neuroticism, k)})"
+        
+        
