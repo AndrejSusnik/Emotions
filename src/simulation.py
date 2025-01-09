@@ -25,7 +25,7 @@ class Simulation:
     """
 
     def __init__(self, params: SimulationParams, mode="uniform"):
-        self.agents = []
+        self.agents: list[Agent] = []
         self.agents_at_destination: list[Agent] = []
         self.environment = params.environment
         # self.destinations = [(line.start.round(), line.center().round(), line.end.round()) for line in self.environment.exits]
@@ -38,6 +38,7 @@ class Simulation:
         for i in range(params.num_agents):
             a = Agent(i)
             a.traits = Ocean.sample(params.oceanDistribution)
+            a.calculate_panic_factor()
 
             if mode == "uniform":
                 xOffset = params.environment.size[0] * 0.1
@@ -152,8 +153,18 @@ class Simulation:
             cluster = list(cluster)
             if len(cluster) == 1:
                 continue
+
+            average_panic = sum([self.agents[i].current_panic for i in cluster]) / len(self.agents)
+
             for i in cluster:
+
                 agent = self.agents[i]
+                # depending on the panic_factor user should move to the cluster average
+                panic_diff = average_panic - agent.current_panic
+                ave_dist = sum([(agent.position - con_s).norm() for con_s in self.environment.contagious_sources]) / len(self.environment.contagious_sources)
+
+                agent.current_panic = agent.panic_factor * panic_diff + ave_dist * agent.panic_factor * 10e-2
+
                 EPSI = 1e-11  # to avoid division by zero
                 # (contagion inside cluster) + (contagion from contagious sources ex. fire)
                 dPd = sum([np.exp((prev_Pds[j] - prev_Pds[i])/(agent.d_xy(self.agents[j]) + EPSI)) for j in cluster if j != i]) \
@@ -380,3 +391,6 @@ class Simulation:
         self.environment.plot(
             self.agents, clusters_of_agents, with_arrows=True)
         self.environment.plot_path(self.agents_at_destination)
+
+        for agent in self.agents_at_destination:
+            print(f"{agent.current_panic}")
