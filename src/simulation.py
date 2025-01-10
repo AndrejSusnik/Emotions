@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import networkx as nx
+import matplotlib.pyplot as plt
 
 from agent import Agent
 from environment import Environment
@@ -38,6 +39,7 @@ class Simulation:
         # TODO append all the points of the line
         self.params = params
 
+        random.seed(42)
         # Example initialization
         for i in range(params.num_agents):
             a = Agent(i)
@@ -203,6 +205,10 @@ class Simulation:
         prev_Pvs = [agent.velocity_preference for agent in self.agents]
 
         for cluster in clusters:
+            y_prev_Pd = []
+            y_new_Pd = []
+            y_prev_Pv = []
+            y_new_Pv = []
             cluster = list(cluster)
             if len(cluster) == 1:
                 if self.params.use_panic:
@@ -241,6 +247,9 @@ class Simulation:
                 dPv = sum([np.exp((prev_Pvs[j] - prev_Pvs[i])/(agent.d_xy(self.agents[j]) + EPSI)) for j in cluster if j != i]) \
                     + sum([np.exp(prev_Pvs[i]/((agent.position - contagious_source).norm() + EPSI))
                           for contagious_source in self.environment.contagious_sources])
+                    
+                dPd = min(1, dPd)
+                dPv = min(1, dPv)
 
                 # selective perception
                 # (distance preseption ... - distance to destination)
@@ -254,8 +263,35 @@ class Simulation:
 
                 # TODO suspicious, we get very high values (ex. 2 => 55), ok, if it will settle here after some iterations
                 # TODO Above Pd there is a line in the article, but it is not clear what it means
+                y_prev_Pd.append(agent.distance_preference)
+                y_prev_Pv.append(agent.velocity_preference)
+                
                 agent.distance_preference = prev_Pds[i] + dPd * wd + Cd
                 agent.velocity_preference = prev_Pvs[i] + dPv * wv + Cv
+                
+                y_new_Pd.append(agent.distance_preference)
+                y_new_Pv.append(agent.velocity_preference)
+                
+            
+                # if np.isnan(agent.distance_preference) or np.isnan(agent.velocity_preference):
+                #     pass
+                
+                # if np.isinf(agent.distance_preference) or np.isinf(agent.velocity_preference):
+                #     pass
+                
+                # print("Agent", agent.id, "Pd", agent.distance_preference, "Pv", agent.velocity_preference)
+            # plt.figure()
+            # plt.plot(range(len(cluster)), y_prev_Pd, label="Pd_prev")
+            # plt.plot(range(len(cluster)), y_new_Pd, label="Pd_new")
+            # plt.legend()
+            # plt.show()
+            
+            
+            # plt.plot(range(len(cluster)), y_prev_Pv, label="Pv_prev")
+            # plt.plot(range(len(cluster)), y_new_Pv, label="Pv_new")
+            # plt.legend()
+            # plt.show()
+            
             
 
     def init_navigation_graphs(self, plot=False):
@@ -351,11 +387,14 @@ class Simulation:
 
             score = length / (desired_velocity_of_agent.norm() * np.exp(-(
                 density * (agent.velocity_preference+1) / (agent.distance_preference+1))**2))
+            # print("exit", exit.id, "score", score)
+            # if np.isnan(score):
+            #     pass
             if max_score is None or score < max_score:
                 max_score = score
                 # agent_destination_id = i
                 agent.destination = exit
-
+        # print("picked exit", agent.destination.id)
         # update the position according to the selected path
         # speed = max(int(round(agent.velocity.norm() * self.params.dt)), 1)
         speed = agent.velocity.norm() * self.params.dt
@@ -457,13 +496,17 @@ class Simulation:
         for i, agent in enumerate(self.agents):
             agent.id = i
 
-    def run(self):
+    def run(self, clustering_mode):
+               
+        
+        
+        
         # delete all the files in plots folder
         for file in os.listdir("plots"):
             os.remove(os.path.join("plots", file))
         
         print("Creating clusters")
-        clusters_of_agents = self.clusters()
+        clusters_of_agents = self.clusters(mode=clustering_mode)
         print("Created clusters. Calculating contagion of emotion preferences")
         self.environment.plot(
             self.agents, clusters_of_agents, with_arrows=True)
@@ -481,7 +524,7 @@ class Simulation:
             if len(self.agents) == 0:
                 break
             self.select_path()
-            clusters_of_agents = self.clusters()
+            clusters_of_agents = self.clusters(mode=clustering_mode)
             self.contagion_of_emotion_preferences(
                 Simulation.labels_to_clusters(clusters_of_agents))
             self.environment.plot(
@@ -489,7 +532,7 @@ class Simulation:
 
         self.environment.plot(
             self.agents, clusters_of_agents, with_arrows=True)
-        self.environment.plot_path(self.agents_at_destination)
+        self.environment.plot_path(self.agents_at_destination, save=True)
 
         self.environment.create_gif()
 

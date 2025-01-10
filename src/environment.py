@@ -17,7 +17,7 @@ env_map = {
 
 
 class Environment:
-    def __init__(self, filename: str, size_in_meters: Pair, tile_size_in_meters: Pair):
+    def __init__(self, filename: str, size_in_meters: Pair, tile_size_in_meters: Pair, with_obstacles=False):
         """
         Reads the environment from a file
         """
@@ -120,8 +120,11 @@ class Environment:
                 for j in range(scale_factor_y):
                     tmp_obst.append(
                         Pair(obst.x * scale_factor_x + i, obst.y * scale_factor_y + j))
-
+        
         self.obstacles = tmp_obst
+        
+        if not with_obstacles:
+            self.obstacles = []
 
         self.exits = list(map(lambda x: x.norm(Pair(
             self.environment.shape[1] - 1, self.environment.shape[0] - 1)).scale(size), self.exits))
@@ -177,7 +180,7 @@ class Environment:
         plt.axis('off')
         plt.show()
 
-    def plot_path(self, agents: list[Agent]):
+    def plot_path(self, agents: list[Agent], save = False):
         #
         # agents[0].history
         # plot the history of all agents
@@ -197,7 +200,12 @@ class Environment:
             history = np.array(
                 [np.array([int(round(a.x)), int(round(a.y))]) for a in history])
             plt.plot(history[:, 0], history[:, 1])
-        plt.show()
+            
+        if save:
+            plt.savefig(f"plots/path_plot.png")
+            plt.show()
+        else:
+            plt.show()
 
     def plot(self, agents, clusters_of_agents=None, with_arrows=False, arrow_scale=0.01, save=False, step=None):
         plt.close()
@@ -257,6 +265,6 @@ class Environment:
         for filename in filenames:
             images.append(imageio.imread(f'plots/{filename}'))
 
-        imageio.mimsave('test.gif', images, 'GIF', loop=1, duration=1, fps=1)
+        imageio.mimsave('plots/test.gif', images, 'GIF', loop=1, duration=1, fps=1)
         print("Gif created")
 

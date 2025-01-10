@@ -8,8 +8,9 @@ if __name__ == '__main__':
     print("Creating environment")
     environment = Environment('test2.txt', size_in_meters=Pair(30,30), tile_size_in_meters=Pair(1, 1))
     print("Creating simulation")
-    sim_params = SimulationParams(num_agents=1, oceanDistribution=oceanDistribution, environment=environment, create_gif=True, simulation_time_in_seconds=100)
+    sim_params = SimulationParams(num_agents=20, oceanDistribution=oceanDistribution, environment=environment, create_gif=True, simulation_time_in_seconds=100)
     sim = Simulation(sim_params,mode="uniform")
 
     print("Running simulation")
-    sim.run()
+    # sim.run(clustering_mode="hierarchical_clustering")
+    sim.run(clustering_mode="default")
