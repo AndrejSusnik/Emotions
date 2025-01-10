@@ -40,6 +40,9 @@ Emotion Contagion Model for Dynamical Crowd Path Planning: Yunpeng Wu et al. ava
     - Screens from simulation, and all traces
     - Try out different clustering method
 
+## Realization of goals
+We have implemented a simulation workflow where we can define the environment in the text format and then run the simulations. We tried out three different clustering algorithms, but the change of clustering algorithm appears to have no visible influence on the result. The introduction of panic parameter was a fruitful decision, as panic like behavior can be seen in the paths of agents. We did not manage to incorporate the historic data of the agent into the model.
+
 
 ## Running the project
 To run the project, you need to have Python installed on your computer. You can download it [here](https://www.python.org/downloads/).

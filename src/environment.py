@@ -136,7 +136,7 @@ class Environment:
         # self.size = self.environment.shape
 
         # self.contagious_sources = []
-        self.contagious_sources = [Pair(size.x,size.y)]  # ex. fire at position 0,0
+        self.contagious_sources = [Pair(15, 15)]  # ex. fire at position 0,0
 
     # def get_valid_positions(self) -> set[tuple[int, int]]:
     #     return set(zip(*np.where(self.environment == 2)))

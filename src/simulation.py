@@ -59,12 +59,11 @@ class Simulation:
             # a.destination = Pair(random.random() * self.environment.size[0], random.random() * self.environment.size[1]).round()
             elif mode == "multimodal":
 
-                centers = [Pair(2, 15), Pair(8, 7)]  # Example centers
+                centers = [Pair(18, 18), Pair(1, 15)]  # Example centers
                 # Select a random center
                 center = random.choice(centers)
 
                 while True:
-
                     # Gaussian sampling around the selected center
                     # 10 is the standard deviation for x
                     x = np.random.normal(loc=center.x, scale=2)
@@ -75,13 +74,29 @@ class Simulation:
                         a.source = p
                         a.position = a.source
                         break
+                    
+
 
             # go to nearest exit
             # _, a.destination = min([((a.position - destination).norm(), destination) for destination in self.destinations])
             # TODO reasonable values
             # random.random(3, 10)
-            a.velocity = Pair(random.random() * 7 +3, random.random() * 7 +3)
+            if a.velocity.x is None:
+                a.velocity = Pair(random.random() * 7 +3, random.random() * 7 +3)
+            # a.velocity = Pair(0, 0)
             self.agents.append(a)
+
+        # a = Agent(len(self.agents))
+        # a.traits = Ocean.sample(params.oceanDistribution)
+        # a.source = Pair(2, 15)
+        # a.position = a.source
+        # a.distance_preference =  0.1
+        # a.init_distance_preference = 0.1
+        # a.velocity_preference = 100
+        # a.init_velocity_preference = 100
+        # a.velocity = Pair(5, 5)
+
+        # self.agents.append(a)
 
         print("Initialized agents")
         print("Number of agents: ", len(self.agents))
@@ -177,7 +192,7 @@ class Simulation:
             for (a, b), dist in distances:
                 if l[a] != l[b]:
                     l = [l[a] if x == l[b] else x for x in l]
-                if len(set(l)) == 3:
+                if len(set(l)) == 2:
                     break
             return l
                     
@@ -215,7 +230,7 @@ class Simulation:
                     agent = self.agents[0]
                     # depending on the panic_factor user should move to the cluster average
                     agent.current_panic = agent.current_panic * 0.05
-                    print("Agent panic factor: ", agent.current_panic)
+                    # print("Agent panic factor: ", agent.current_panic)
 
                 continue
 
@@ -231,7 +246,7 @@ class Simulation:
                         self.environment.contagious_sources)) + 1e-11)
 
                     if agent.current_panic < 0.8 * agent.panic_factor:
-                        agent.current_panic += ave_dist * agent.panic_factor * 10e-2
+                        agent.current_panic += ave_dist * agent.panic_factor * 10e-1
                     elif agent.current_panic > agent.panic_factor:
                         agent.current_panic -= (agent.current_panic -
                                                 agent.panic_factor) * 0.3
@@ -497,11 +512,11 @@ class Simulation:
             agent.id = i
 
     def run(self, clustering_mode):
-               
-        
-        
-        
         # delete all the files in plots folder
+        # if plots folder does not exist create it 
+        if not os.path.exists("plots"):
+            os.mkdir("plots")
+
         for file in os.listdir("plots"):
             os.remove(os.path.join("plots", file))
 
@@ -533,5 +548,4 @@ class Simulation:
         self.environment.plot(
             self.agents, clusters_of_agents, with_arrows=True)
         self.environment.plot_path(self.agents_at_destination, save=True)
-
         self.environment.create_gif()
