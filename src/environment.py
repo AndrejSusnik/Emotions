@@ -133,7 +133,7 @@ class Environment:
         # self.size = self.environment.shape
 
         # self.contagious_sources = []
-        self.contagious_sources = [Pair(0, 0)]  # ex. fire at position 0,0
+        self.contagious_sources = [Pair(size.x,size.y)]  # ex. fire at position 0,0
 
     # def get_valid_positions(self) -> set[tuple[int, int]]:
     #     return set(zip(*np.where(self.environment == 2)))
@@ -228,6 +228,9 @@ class Environment:
 
         for obstacle in self.obstacles:
             plt.scatter(obstacle.x, obstacle.y, c='black', s=100)
+            
+        for contagious_source in self.contagious_sources:
+            plt.scatter(contagious_source.x, contagious_source.y, c='red', s=100)
 
         # a, b = self.size
         # plt.plot([0, a], [0, 0], 'k')
