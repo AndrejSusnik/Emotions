@@ -19,6 +19,7 @@ class SimulationParams:
         self.simulation_time_in_seconds = simulation_time_in_seconds
         self.dt = dt
         self.create_gif = False
+        self.use_panic = False
 
 
 class Simulation:
@@ -82,7 +83,7 @@ class Simulation:
         print("Initialized agents")
         print("Number of agents: ", len(self.agents))
         print("Initializing navigation graphs")
-        self.navigation_graphs = self.init_navigation_graphs(plot=False)
+        self.navigation_graphs = self.init_navigation_graphs(plot=True)
         print("Initialized navigation graphs")
 
     def collective_density(self, agent0: Agent) -> int:
@@ -154,10 +155,11 @@ class Simulation:
         for cluster in clusters:
             cluster = list(cluster)
             if len(cluster) == 1:
-                agent = self.agents[0]
-                # depending on the panic_factor user should move to the cluster average
-                agent.current_panic = agent.current_panic * 0.05
-                print("Agent panic factor: ", agent.current_panic)
+                if self.params.use_panic:
+                    agent = self.agents[0]
+                    # depending on the panic_factor user should move to the cluster average
+                    agent.current_panic = agent.current_panic * 0.05
+                    print("Agent panic factor: ", agent.current_panic)
 
                 continue
 
@@ -165,23 +167,21 @@ class Simulation:
                 [self.agents[i].current_panic for i in cluster]) / len(self.agents)
 
             for i in cluster:
-
                 agent = self.agents[i]
-                # depending on the panic_factor user should move to the cluster average
-                panic_diff = average_panic - agent.current_panic
-                ave_dist = 1 / ((sum([(agent.position - con_s).norm() for con_s in self.environment.contagious_sources]) / len(
-                    self.environment.contagious_sources)) + 1e-11)
+                if self.params.use_panic:
+                    # depending on the panic_factor user should move to the cluster average
+                    panic_diff = average_panic - agent.current_panic
+                    ave_dist = 1 / ((sum([(agent.position - con_s).norm() for con_s in self.environment.contagious_sources]) / len(
+                        self.environment.contagious_sources)) + 1e-11)
 
-                if agent.current_panic < 0.8 * agent.panic_factor:
-                    agent.current_panic += ave_dist * agent.panic_factor * 10e-2
-                elif agent.current_panic > agent.panic_factor:
-                    agent.current_panic -= (agent.current_panic -
-                                            agent.panic_factor) * 0.3
+                    if agent.current_panic < 0.8 * agent.panic_factor:
+                        agent.current_panic += ave_dist * agent.panic_factor * 10e-2
+                    elif agent.current_panic > agent.panic_factor:
+                        agent.current_panic -= (agent.current_panic -
+                                                agent.panic_factor) * 0.3
 
-                agent.current_panic += agent.panic_factor * panic_diff * 0.05
-                agent.current_panic = max(0, min(1, agent.current_panic))
-
-
+                    agent.current_panic += agent.panic_factor * panic_diff * 0.05
+                    agent.current_panic = max(0, min(1, agent.current_panic))
 
                 EPSI = 1e-11  # to avoid division by zero
                 # (contagion inside cluster) + (contagion from contagious sources ex. fire)
@@ -263,7 +263,7 @@ class Simulation:
         return grids
 
     def get_densities(self):
-        # scan in the radious that is 2,5 times the size of the destination
+        # scan in the radious that is 1,5 times the size of the destination
         densities = dict()
         for exit in self.exits:
             # scan some radius back, and count the agents in the radius
@@ -275,7 +275,7 @@ class Simulation:
                     density += 1
             densities[exit.id] = density / len(self.agents)
             # densities.append(0.5)
-        # print(densities)
+        print(densities)
         return densities
 
     def calc_new_pos(self, agent, densities_of_exits):
@@ -317,27 +317,28 @@ class Simulation:
 
         move_random = False
 
-        num = random.random()
-        if num < agent.current_panic:
-            move_random = True
+        if self.params.use_panic:
+            num = random.random()
+            if num < agent.current_panic:
+                move_random = True
 
-        if move_random:
-            while True:
-                pos = agent.position
-                random.shuffle(deltas)
-                for delta in deltas:
-                    new_pos = pos + delta
-                    collision = False
-                    for other_agent in self.agents:
-                        if other_agent.position == agent.position and other_agent.id != agent.id:
-                            collision = True
-                    if self.environment.is_valid_position(new_pos) and not collision:
-                        agent.position = new_pos
-                        break
-                break
-            if agent.position in agent.destination.points():
-                agent.arrivied = True
-                agent.history.append(agent.position)
+            if move_random:
+                while True:
+                    pos = agent.position
+                    random.shuffle(deltas)
+                    for delta in deltas:
+                        new_pos = pos + delta
+                        collision = False
+                        for other_agent in self.agents:
+                            if other_agent.position == agent.position and other_agent.id != agent.id:
+                                collision = True
+                        if self.environment.is_valid_position(new_pos) and not collision:
+                            agent.position = new_pos
+                            break
+                    break
+                if agent.position in agent.destination.points():
+                    agent.arrivied = True
+                    agent.history.append(agent.position)
 
         # for i in range(speed):
         while speed > 0 and (not move_random):
