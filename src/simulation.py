@@ -14,7 +14,7 @@ import os
 
 
 class SimulationParams:
-    def __init__(self, num_agents: int, oceanDistribution: OceanDistribution, environment: Environment, create_gif = False, simulation_time_in_seconds: int = 1000, dt: float = 0.1):
+    def __init__(self, num_agents: int, oceanDistribution: OceanDistribution, environment: Environment, use_panic=False, create_gif=False, simulation_time_in_seconds: int = 1000, dt: float = 0.1):
         self.num_agents = num_agents
         self.oceanDistribution = oceanDistribution
         self.environment = environment
@@ -504,7 +504,7 @@ class Simulation:
         # delete all the files in plots folder
         for file in os.listdir("plots"):
             os.remove(os.path.join("plots", file))
-        
+
         print("Creating clusters")
         clusters_of_agents = self.clusters(mode=clustering_mode)
         print("Created clusters. Calculating contagion of emotion preferences")
@@ -535,4 +535,3 @@ class Simulation:
         self.environment.plot_path(self.agents_at_destination, save=True)
 
         self.environment.create_gif()
-
