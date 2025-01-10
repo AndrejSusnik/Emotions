@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import networkx as nx
 
 from agent import Agent
 from environment import Environment
@@ -76,14 +77,14 @@ class Simulation:
             # go to nearest exit
             # _, a.destination = min([((a.position - destination).norm(), destination) for destination in self.destinations])
             # TODO reasonable values
-            # random.random(0, 10)
-            a.velocity = Pair(random.random() * 10, random.random() * 10)
+            # random.random(3, 10)
+            a.velocity = Pair(random.random() * 7 +3, random.random() * 7 +3)
             self.agents.append(a)
 
         print("Initialized agents")
         print("Number of agents: ", len(self.agents))
         print("Initializing navigation graphs")
-        self.navigation_graphs = self.init_navigation_graphs(plot=True)
+        self.navigation_graphs = self.init_navigation_graphs(plot=False)
         print("Initialized navigation graphs")
 
     def collective_density(self, agent0: Agent) -> int:
@@ -110,29 +111,74 @@ class Simulation:
                         distance = distance_
         return neighbour
 
-    def clusters(self) -> list[int]:
+    # def clusters(self, mode="default") -> list[int]:
+    # def clusters(self, mode="fast_label_propagation") -> list[int]:
+    def clusters(self, mode="hierarchical_clustering") -> list[int]:
         """For every agent, there is the number of its cluster ex. [9,0,3,3,9]
         """
-        if len(self.agents) == 0:
-            return []
-        collective_densities = np.array(
-            [self.collective_density(agent) for agent in self.agents])
-        # indexes of agents by descending density
-        agent_ids = np.flip(np.argsort(collective_densities))
-
-        clusters_of_agents = [None] * len(self.agents)
-
-        clusters_of_agents[agent_ids[0]] = int(agent_ids[0])
-        for agent_id in agent_ids[1:]:
-            agent = self.agents[agent_id]
-            neighbour = self.closest_denser_neighbour(agent)
-            if neighbour != -1:
-                clusters_of_agents[agent.id] = clusters_of_agents[neighbour.id]
-            else:
-                clusters_of_agents[agent.id] = agent.id
-        # print(clusters_of_agents)
-        # TODO does this work correctly? it is a bit random, maybe combining more iterations the thing is in average stable
-        return clusters_of_agents
+        if mode == "default":
+            if len(self.agents) == 0:
+                return []
+            collective_densities = np.array([self.collective_density(agent) for agent in self.agents])
+            agent_ids = np.flip(np.argsort(collective_densities)) # indexes of agents by descending density
+            
+            clusters_of_agents = [None] * len(self.agents)
+            
+            clusters_of_agents[agent_ids[0]] = int(agent_ids[0])
+            for agent_id in agent_ids[1:]:
+                agent = self.agents[agent_id]
+                neighbour = self.closest_denser_neighbour(agent)
+                if neighbour != -1:
+                    clusters_of_agents[agent.id] = clusters_of_agents[neighbour.id]
+                else:
+                    clusters_of_agents[agent.id] = agent.id
+            # print(clusters_of_agents)
+            # TODO does this work correctly? it is a bit random, maybe combining more iterations the thing is in average stable
+            return clusters_of_agents
+        # elif mode == "fast_label_propagation":
+        #     G = nx.Graph()
+        #     for agent in self.agents:
+        #         G.add_node(agent.id, density=self.collective_density(agent))
+        #     for agent in self.agents:
+        #         for agent2 in self.agents:
+        #             if agent.id == agent2.id:
+        #                 break
+        #             dist = (agent.position - agent2.position).norm()
+        #             G.add_edge(agent.id, agent2.id, dist=dist)
+                        
+        #     # sets_of_nodes = nx.community.fast_label_propagation_communities(G, weight="dist")
+        #     # sets_of_nodes = nx.community.louvain_communities(G, weight="dist", resolution=1.1)
+        #     # if G.number_of_nodes == 0:
+        #     #     return []
+        #     try:
+        #         sets_of_nodes = nx.community.kernighan_lin_bisection(G, weight=None)
+        #     except:
+        #         return [0] * len(self.agents)
+            
+        #     l = [None] * len(self.agents)
+        #     for i, s in enumerate(sets_of_nodes):
+        #         print(s)
+        #         for node in s:
+        #             node_id = int(node)
+        #             l[node_id] = i
+        #     return l
+        elif mode == "hierarchical_clustering":
+            dists = dict()
+            for agent in self.agents:
+                for agent2 in self.agents:
+                    if agent.id == agent2.id:
+                        break
+                    dists[(agent.id, agent2.id)] = (agent.position - agent2.position).norm()
+            # iterativly merge the closest clusters
+            l = [i for i in range(len(self.agents))]
+            distances = sorted(dists.items(), key=lambda x: x[1])
+            for (a, b), dist in distances:
+                if l[a] != l[b]:
+                    l = [l[a] if x == l[b] else x for x in l]
+                if len(set(l)) == 3:
+                    break
+            return l
+                    
 
     @staticmethod
     def labels_to_clusters(clusters_of_agents: list[int]) -> list[set[int]]:
@@ -149,6 +195,10 @@ class Simulation:
     def contagion_of_emotion_preferences(self, clusters: list[set[int]]):
         """Update the emotion preferences (distance Pd, velocity Pv) of the agent based on the cluster he is in
         """
+        
+        if len(self.agents) != 0 and self.agents[0].destination is None:
+            return 
+        
         prev_Pds = [agent.distance_preference for agent in self.agents]
         prev_Pvs = [agent.velocity_preference for agent in self.agents]
 
@@ -206,6 +256,7 @@ class Simulation:
                 # TODO Above Pd there is a line in the article, but it is not clear what it means
                 agent.distance_preference = prev_Pds[i] + dPd * wd + Cd
                 agent.velocity_preference = prev_Pvs[i] + dPv * wv + Cv
+            
 
     def init_navigation_graphs(self, plot=False):
         # maybe this gets more interesting when there are more rooms
