@@ -167,7 +167,7 @@ where we obtain the correct angle ${\theta}$\ from the \textit{x}-axis \cite{wik
 % RESULTS
 \section{Results} \label{res}
 \subsubsection{Clustering}
-Figure \ref{fig:enter-label} shows multiple runs of the clustering algorithm from article \cite{Wu_Huang_Tian_Yan_Yu_2024}. Even though that the clusters were very different when we used a different algorithm, little to no effect was visible on the agent paths.
+Figure \ref{fig:enter-label} shows multiple runs of the clustering algorithm from article \cite{Wu_Huang_Tian_Yan_Yu_2024}. Even though the clusters were very different when we used a different algorithm, little to no effect was visible on the agent paths.
 
 \begin{figure}[h!]
     \centering
@@ -176,7 +176,7 @@ Figure \ref{fig:enter-label} shows multiple runs of the clustering algorithm fro
     \includegraphics[width=0.3\linewidth]{fig/Figure_3.png}
     \hfill
     \includegraphics[width=0.3\linewidth]{fig/Figure_4.png}
-    \caption{Example runs of clustering according to association with the closest neighbor with a higher degree. The implementation is currently slightly unstable, but it may suffice for the purpose of emotion contagion. The leftmost sub-figure represents agents with positions initialized uniformly, while the two to the right represent agents with positions initialized with a bimodal Gaussian distribution.}
+    \caption{Example runs of clustering according to association with the closest neighbor with a higher degree. The leftmost sub-figure represents agents with positions initialized uniformly, while the two to the right represent agents with positions initialized with a bimodal Gaussian distribution.}
     \label{fig:enter-label}
 \end{figure}
 
@@ -191,7 +191,7 @@ This navigation graph would, in theory, allow for modeling the movement of agent
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.5\linewidth]{fig/dijkstra.png}
-    \caption{Example navigation graph for a grid of dimensions 10 times 10. Yellow nodes represent the exit of width 3 and obstacle.}
+    \caption{Example navigation graph for a grid of dimensions 10 times 10. Yellow nodes represent the exit of width 3 and the obstacle.}
     \label{fig:spgraph}
 \end{figure}
 
@@ -210,23 +210,23 @@ This navigation graph would, in theory, allow for modeling the movement of agent
 % \end{figure}
 
 \subsubsection{Experiment}
-We performed an experiment where we manually set the velocity preference of a single agent to higher value than the other agents. The results can be seen in Figure \ref{fig:outlier}.
+We performed an experiment where we manually set the velocity preference of a single agent to a significantly higher value than the other agents. The results can be seen in Figure \ref{fig:outlier}.
 \begin{figure}[htb]
     \centering
     \includegraphics[width=0.5\linewidth]{fig/path_plot_single_outlier.png}
-    \caption{Paths of the agents where a single agent was given very strong velocity preference thus choosing the farther exit. The black dots represent fields obstructed by an obstacle.}
+    \caption{Paths of the agents in the case of a single agent assigned a very strong velocity preference, forcing them to choose the farther exit. The black dots represent an arbitrary obstacle.}
     \label{fig:outlier}
 \end{figure}
 
 \subsubsection{Panic}
-We discovered that panic parameter has great influence on the paths as is depicted on Figure \ref{fig:panic}.
+We discovered that the panic parameter has great influence on the paths, as shown in Figure \ref{fig:panic}.
 
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.45\linewidth]{fig/path_plot_nopanic.png}
     \hfill
     \includegraphics[width=0.45\linewidth]{fig/path_plot_panic.png}
-    \caption{Example runs without panic (left) and with panic (right) turned on. We can evidently see more chaos in the example of panic turned on.}
+    \caption{Example runs without a source of panic (left) and with a source of panic (right) included. The more erratic movement as a result of the panic is clearly seen in the right part of the figure.}
     \label{fig:panic}
 \end{figure}
 
@@ -239,7 +239,7 @@ We tested the hierarchical clustering algorithm and found that the results are n
     \includegraphics[width=0.45\linewidth]{fig/obst_nopanic_newclusters_path_plot.png}
 \hfill
     \includegraphics[width=0.45\linewidth]{fig/obst_nopanic_oldclusters_path_plot.png}
-    \caption{The left image represents the paths of the agents that were clustered using hierarchical clustering and the image on the right represents the paths of agents that were using clustering algorithm proposed by the source article}
+    \caption{The left image represents the paths of the agents that were clustered using hierarchical clustering and the image on the right represents the paths of agents based off the clustering algorithm proposed by the source article.}
     \label{fig:enter-label}
 \end{figure}
 
