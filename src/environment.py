@@ -29,6 +29,7 @@ class Environment:
 
         self.size_in_meters = size_in_meters
         self.tile_size_in_meters = tile_size_in_meters
+        self.filename = filename
 
         #  extract the exits and walls in relative coordinates
         self.exits: list[Line] = []

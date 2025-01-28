@@ -311,6 +311,18 @@ class Simulation:
 
     def init_navigation_graphs(self, plot=False):
         # maybe this gets more interesting when there are more rooms
+
+        os.makedirs("cache", exist_ok=True)
+
+        filename = "cache/navigation_graphs_" + str(self.environment.size[0]) + "_" + str(self.environment.size[1]) + "_" + self.environment.filename + ".npy"
+        check = os.path.exists(filename)
+
+        if check:
+            grids = np.load(filename, allow_pickle=True)
+            self.navigation_graphs = grids.item()
+            return self.navigation_graphs
+
+
         grids = dict()
         for exit in self.exits:
             grid = [[0] * (self.environment.size[1] + 1)
@@ -357,6 +369,8 @@ class Simulation:
             grids[exit.id] = grid
 
         self.navigation_graphs = grids
+
+        np.save(filename, grids)
 
         if plot:
             for grid in grids.values():
