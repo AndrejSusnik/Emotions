@@ -62,6 +62,11 @@ In the src folder create .env file with the following content:
 ENVIRONMENTS_PATH=path/to/environments
 ```
 
+if you ar running the project from the root of the project only run
+```bash
+mv example.env .env
+```
+
 
 Install the required packages:
 ```bash
