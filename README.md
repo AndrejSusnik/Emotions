@@ -35,10 +35,17 @@ Emotion Contagion Model for Dynamical Crowd Path Planning: Yunpeng Wu et al. ava
 * Final (11.1.2025)
 
     - Add parameter of panic to agents (slows down evacuation)
-    - Use historic data of agent (max agressivness until now)
+    <!-- - Use historic data of agent (max agressivness until now) -->
     - Working simulation
     - Screens from simulation, and all traces
-    - Try out different clustering method
+    - Try out different clustering methods
+
+* Postfinal (28.2.2025)
+    - Collision avoidance: in case of conflict (intersecting paths/lines inside one time step), a random agent gets to procede, other(s) have to stay still
+    - Increase agent count to 150-200
+    - Visualize panic parameter (size of the agent)
+    - Try out different clustering methods - debug
+
 
 ## Realization of goals
 We have implemented a simulation workflow where we can define the environment in the text format and then run the simulations. We tried out three different clustering algorithms, but the change of clustering algorithm appears to have no visible influence on the result. The introduction of panic parameter was a fruitful decision, as panic like behavior can be seen in the paths of agents. We did not manage to incorporate the historic data of the agent into the model.
