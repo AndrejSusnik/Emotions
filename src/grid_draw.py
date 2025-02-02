@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 #     [((2, 0), 5), ((2, 1), 4), ((2, 2), 3), ((2, 3), 2), ((2, 4), 1), ((2, 5), 0)]
 # ]
 
-def plot_navigation_graph(grid, node_size = 200):
+def plot_navigation_graph(grid, node_size = 1):
 
     G = nx.DiGraph()
     color_map = {}

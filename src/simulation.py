@@ -54,9 +54,8 @@ class Simulation:
                     ) * (self.environment.size[0] - 2*xOffset), yOffset + random.random() * (self.environment.size[1] - 2*yOffset)).round()
                     a.position = a.source
                     
-                    notunique = len([a2 for a2 in self.agents if a2.position == a.position]) > 0
-                    if notunique:
-                        print("Not unique")
+                    if a.position in set([a2.position for a2 in self.agents]):
+                        # print("Not unique")
                         continue
 
                     if self.environment.is_valid_position(a.source):
@@ -75,10 +74,20 @@ class Simulation:
                     # 10 is the standard deviation for y
                     y = np.random.normal(loc=center.y, scale=2)
                     p = Pair(x, y).round()
-                    if self.environment.is_valid_position(p):
-                        a.source = p
-                        a.position = a.source
-                        break
+                    
+                    
+                    
+                    if not self.environment.is_valid_position(p):
+                        continue
+                    
+                    a.source = p
+                    a.position = a.source
+                    
+                    if a.position in set([a2.position for a2 in self.agents]):
+                        # print("Not unique")
+                        continue
+                    
+                    break
                     
 
 
@@ -102,6 +111,9 @@ class Simulation:
         # a.velocity = Pair(5, 5)
 
         # self.agents.append(a)
+        
+        print("NUMBER OF AGENTS", len(self.agents))
+        print("NUMBER OF POSITIONS", len(set([a.position for a in self.agents])))
 
         print("Initialized agents")
         print("Number of agents: ", len(self.agents))
@@ -331,6 +343,10 @@ class Simulation:
         if check:
             grids = np.load(filename, allow_pickle=True)
             self.navigation_graphs = grids.item()
+            
+            if plot:
+                for grid in grids.tolist().values():
+                    plot_navigation_graph(grid)
             return self.navigation_graphs
 
 
@@ -371,11 +387,12 @@ class Simulation:
                     random.shuffle(deltas)
                     for delta in deltas:
                         new = current + delta
-                        queue.append({
-                            "position": new,
-                            "length": length + delta.norm(),
-                            "parent": current
-                        })
+                        if self.environment.is_valid_position(new):
+                            queue.append({
+                                "position": new,
+                                "length": length + delta.norm(),
+                                "parent": current
+                            })
 
             grids[exit.id] = grid
 
@@ -513,7 +530,7 @@ class Simulation:
         #     agent.velocity = (move).scale(agent.velocity.norm())
         agent.velocity = (move).scale(agent.velocity.norm())
 
-    def select_path(self):
+    def select_path(self, collision_avoidance=True):
         # if we choose a destination, the path is selected, as there is only one shortest path in the navigation graph of this destination
         # densities_of_destinations = [self.density_of_destination(destination) for destination in self.destinations]
         densities_of_exits = self.get_densities()
@@ -531,27 +548,28 @@ class Simulation:
         self.agents = tmp_agents
         
         # resolve conflicts, if the paths intersect, one will not move
-        for agent in self.agents:
-            for agent2 in self.agents:
-                if agent.id == agent2.id:
-                    break
-                line1 = Line(agent.history[-1], agent.position)
-                line2 = Line(agent2.history[-1], agent2.position)
-                intersection = line1.intersection(line2)
-                if intersection is not None:
-                    # the spot just got free (both can go)
-                    if intersection == agent.position and intersection == agent2.history[-1] or \
-                        intersection == agent2.position and intersection == agent.history[-1]:
-                        continue
-                    
-                    # only one can go
-                    if random.random() < 0.5:
-                        agent.position = agent.history[-1].copy()
-                        agent.arrivied = agent.position in agent.destination.points()
-                    else:
-                        agent2.position = agent2.history[-1].copy()
-                        agent2.arrivied = agent2.position in agent.destination.points()
-                    break
+        if collision_avoidance:
+            for agent in self.agents:
+                for agent2 in self.agents:
+                    if agent.id == agent2.id:
+                        break
+                    line1 = Line(agent.history[-1], agent.position)
+                    line2 = Line(agent2.history[-1], agent2.position)
+                    intersection = line1.intersection(line2)
+                    if intersection is not None:
+                        # the spot just got free (both can go)
+                        if intersection == agent.position and intersection == agent2.history[-1] or \
+                            intersection == agent2.position and intersection == agent.history[-1]:
+                            continue
+                        
+                        # only one can go
+                        if random.random() < 0.5:
+                            agent.position = agent.history[-1].copy()
+                            agent.arrivied = agent.position in agent.destination.points()
+                        else:
+                            agent2.position = agent2.history[-1].copy()
+                            agent2.arrivied = agent2.position in agent.destination.points()
+                        break
                         
         for agent in self.agents:
             if agent.arrivied:
@@ -560,7 +578,7 @@ class Simulation:
         for i, agent in enumerate(self.agents):
             agent.id = i
 
-    def run(self, clustering_mode):
+    def run(self, clustering_mode, collision_avoidance):
         # delete all the files in plots folder
         # if plots folder does not exist create it 
         if not os.path.exists("plots"):
@@ -587,7 +605,7 @@ class Simulation:
             print(f"Number of agents: {len(self.agents)}")
             if len(self.agents) == 0:
                 break
-            self.select_path()
+            self.select_path(collision_avoidance=collision_avoidance)
             clusters_of_agents = self.clusters(mode=clustering_mode)
             self.contagion_of_emotion_preferences(
                 Simulation.labels_to_clusters(clusters_of_agents))
