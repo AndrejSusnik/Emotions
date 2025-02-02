@@ -48,6 +48,9 @@ class Pair:
 
     def scale(self, scalar):
         return Pair(self.x * scalar, self.y * scalar)
+    
+    def copy(self):
+        return Pair(self.x, self.y)
 
 class Line:
     def __init__(self, start: Pair, end: Pair):
@@ -90,6 +93,27 @@ class Line:
     
     def center(self):
         return Pair((self.start.x + self.end.x) / 2, (self.start.y + self.end.y) / 2)
+    
+    def intersection(self, other: 'Line'):
+        x1, y1 = self.start.get()
+        x2, y2 = self.end.get()
+        x3, y3 = other.start.get()
+        x4, y4 = other.end.get()
+        
+        # https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
+        d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+        if d == 0:
+            return None
+        x = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)
+        y = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)
+        inti = Pair(x / d, y / d)
+        
+        if inti.x < min(x1, x2) or inti.x > max(x1, x2) or inti.y < min(y1, y2) or inti.y > max(y1, y2):
+            return None
+        
+        return inti
+    
+        
 
 
 class Rect:
@@ -153,4 +177,12 @@ class Ocean:
         k = 3
         return f"OCEAN({round(self.openness, k)}, {round(self.conscientiousness, k)}, {round(self.extroversion, k)}, {round(self.agreeableness, k)}, {round(self.neuroticism, k)})"
         
-        
+if __name__ == "__main__":
+    p1 = Pair(0, 0)
+    p2 = Pair(1, 1)
+    p3 = Pair(0, 0)
+    p4 = Pair(0, 1)
+    l1 = Line(p1, p2)
+    l2 = Line(p3, p4)
+    print(l1.intersection(l2)) # Pair(0.5, 0.5)
+    print(l2.intersection(l1)) # Pair(0.5, 0.5)

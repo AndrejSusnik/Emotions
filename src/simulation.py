@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from agent import Agent
 from environment import Environment
 from exit import Exit
-from helper_classes import Pair, Ocean, OceanDistribution
+from helper_classes import Pair, Ocean, OceanDistribution, Line
 from grid_draw import plot_navigation_graph
 from joblib import Parallel, delayed
 import time
@@ -53,6 +53,11 @@ class Simulation:
                     a.source = Pair(xOffset + random.random(
                     ) * (self.environment.size[0] - 2*xOffset), yOffset + random.random() * (self.environment.size[1] - 2*yOffset)).round()
                     a.position = a.source
+                    
+                    notunique = len([a2 for a2 in self.agents if a2.position == a.position]) > 0
+                    if notunique:
+                        print("Not unique")
+                        continue
 
                     if self.environment.is_valid_position(a.source):
                         break
@@ -476,36 +481,37 @@ class Simulation:
             agent.history.append(agent.position)
             agent.position = self.navigation_graphs[agent.destination.id][agent.position.x][agent.position.y][0]
 
-            # check if any other agent occupies the position
-            collision = False
-            for other_agent in self.agents:
-                if other_agent.position == agent.position and other_agent.id != agent.id:
-                    collision = True
+            # 1 check if any other agent occupies the position
+            # collision = False
+            # for other_agent in self.agents:
+            #     if other_agent.position == agent.position and other_agent.id != agent.id:
+            #         collision = True
 
-            if collision:
-                agent.position = prev_position
-                # move to random unoccupied position one step back
+            # if collision:
+            #     agent.position = prev_position
+            #     # move to random unoccupied position one step back
 
-                pos = agent.position
-                random.shuffle(deltas)
-                for delta in deltas:
-                    new_pos = pos + delta
-                    if self.environment.is_valid_position(new_pos):
-                        agent.position = new_pos
-                        break
+            #     pos = agent.position
+            #     random.shuffle(deltas)
+            #     for delta in deltas:
+            #         new_pos = pos + delta
+            #         if self.environment.is_valid_position(new_pos):
+            #             agent.position = new_pos
+            #             break
 
-                agent.colided = True
-                break
+            #     agent.colided = True
+            #     break
 
             speed = speed - (prev_position - agent.position).norm()
 
         move = (agent.position - prev_position)
         move = move if move.norm() == 0 else move.scale(1/move.norm())
-        if agent.colided:
-            agent.colided = False
-            agent.velocity = Pair(random.random() * 2, random.random() * 2)
-        else:
-            agent.velocity = (move).scale(agent.velocity.norm())
+        # if agent.colided:
+        #     agent.colided = False
+        #     agent.velocity = Pair(random.random() * 2, random.random() * 2)
+        # else:
+        #     agent.velocity = (move).scale(agent.velocity.norm())
+        agent.velocity = (move).scale(agent.velocity.norm())
 
     def select_path(self):
         # if we choose a destination, the path is selected, as there is only one shortest path in the navigation graph of this destination
@@ -523,7 +529,30 @@ class Simulation:
         print(time.time() - t)
 
         self.agents = tmp_agents
-
+        
+        # resolve conflicts, if the paths intersect, one will not move
+        for agent in self.agents:
+            for agent2 in self.agents:
+                if agent.id == agent2.id:
+                    break
+                line1 = Line(agent.history[-1], agent.position)
+                line2 = Line(agent2.history[-1], agent2.position)
+                intersection = line1.intersection(line2)
+                if intersection is not None:
+                    # the spot just got free (both can go)
+                    if intersection == agent.position and intersection == agent2.history[-1] or \
+                        intersection == agent2.position and intersection == agent.history[-1]:
+                        continue
+                    
+                    # only one can go
+                    if random.random() < 0.5:
+                        agent.position = agent.history[-1].copy()
+                        agent.arrivied = agent.position in agent.destination.points()
+                    else:
+                        agent2.position = agent2.history[-1].copy()
+                        agent2.arrivied = agent2.position in agent.destination.points()
+                    break
+                        
         for agent in self.agents:
             if agent.arrivied:
                 self.agents_at_destination.append(agent)
