@@ -152,33 +152,39 @@ class Simulation:
             # print(clusters_of_agents)
             # TODO does this work correctly? it is a bit random, maybe combining more iterations the thing is in average stable
             return clusters_of_agents
-        # elif mode == "fast_label_propagation":
-        #     G = nx.Graph()
-        #     for agent in self.agents:
-        #         G.add_node(agent.id, density=self.collective_density(agent))
-        #     for agent in self.agents:
-        #         for agent2 in self.agents:
-        #             if agent.id == agent2.id:
-        #                 break
-        #             dist = (agent.position - agent2.position).norm()
-        #             G.add_edge(agent.id, agent2.id, dist=dist)
+        elif mode == "fast_label_propagation":
+            G = nx.Graph()
+            # for agent in self.agents:
+            #     # G.add_node(agent.id, density=self.collective_density(agent))
+            #     G.add_node(agent.id)
+            for agent in self.agents:
+                for agent2 in self.agents:
+                    if agent.id == agent2.id:
+                        break
+                    dist = (agent.position - agent2.position).norm()
+                    print("dist", dist)
+                    try:
+                        if dist is not None and dist < 10:
+                            G.add_edge(agent.id, agent2.id, weight=dist)
+                    except:
+                        pass
                         
-        #     # sets_of_nodes = nx.community.fast_label_propagation_communities(G, weight="dist")
-        #     # sets_of_nodes = nx.community.louvain_communities(G, weight="dist", resolution=1.1)
-        #     # if G.number_of_nodes == 0:
-        #     #     return []
-        #     try:
-        #         sets_of_nodes = nx.community.kernighan_lin_bisection(G, weight=None)
-        #     except:
-        #         return [0] * len(self.agents)
+            sets_of_nodes = nx.community.fast_label_propagation_communities(G, weight="dist")
+            # sets_of_nodes = nx.community.louvain_communities(G, weight="dist", resolution=1.1)
+            # if G.number_of_nodes == 0:
+            #     return []
+            # try:
+            #     sets_of_nodes = nx.community.kernighan_lin_bisection(G, weight="weight")
+            # except:
+            #     return [0] * len(self.agents)
             
-        #     l = [None] * len(self.agents)
-        #     for i, s in enumerate(sets_of_nodes):
-        #         print(s)
-        #         for node in s:
-        #             node_id = int(node)
-        #             l[node_id] = i
-        #     return l
+            l = [None] * len(self.agents)
+            for i, s in enumerate(sets_of_nodes):
+                print(s)
+                for node in s:
+                    node_id = int(node)
+                    l[node_id] = i
+            return l
         elif mode == "hierarchical_clustering":
             dists = dict()
             for agent in self.agents:
@@ -560,6 +566,6 @@ class Simulation:
                 self.agents, clusters_of_agents, with_arrows=False, save=True, step=i)
 
         self.environment.plot(
-            self.agents, clusters_of_agents, with_arrows=True)
+            self.agents, clusters_of_agents, with_arrows=False)
         self.environment.plot_path(self.agents_at_destination, save=True)
         self.environment.create_gif()

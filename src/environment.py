@@ -217,14 +217,16 @@ class Environment:
             plt.quiver(agents_pos[:, 0], agents_pos[:, 1], [a.velocity.x * arrow_scale for a in agents],
                        [a.velocity.y * arrow_scale for a in agents], color='blue')
 
-        if clusters_of_agents is None:
+        if clusters_of_agents is None or len(clusters_of_agents) == 0:
             plt.scatter(agents_pos[:, 0], agents_pos[:, 1])
         else:
-            _, colors = np.unique(clusters_of_agents, return_inverse=True)
-            # print(colors)
-            plt.scatter(agents_pos[:, 0], agents_pos[:,
-                        1], c=colors+1, cmap="plasma")
-            plt.colorbar()
+            try:
+                _, colors = np.unique(clusters_of_agents, return_inverse=True)
+                # print(colors)
+                plt.scatter(agents_pos[:, 0], agents_pos[:,1], c=colors+1, cmap="plasma")
+                plt.colorbar()
+            except:
+                plt.scatter(agents_pos[:, 0], agents_pos[:, 1])
 
         # plot the exits
         for exit in self.exits:
