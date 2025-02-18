@@ -22,3 +22,20 @@ class Exit(Line):
         return self.id == other.id
         
     
+class ExitEx():
+    """ExitEx is an extended exit, it has an id and a list of points"""
+    def __init__(self, id : int, points : list = []):
+        self.id = id
+        self.points = points
+    
+    def add_point(self, point : Pair):
+        self.points.append(point)
+
+    def is_empty(self):
+        return len(self.points) == 0
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __str__(self):
+        return f"ExitEx: {self.id} {self.points}"

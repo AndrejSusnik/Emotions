@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 
 from agent import Agent
 from environment import Environment
-from exit import Exit
+from exit import ExitEx
 from helper_classes import Pair, Ocean, OceanDistribution
 from grid_draw import plot_navigation_graph
 from joblib import Parallel, delayed
 import time
 import os
+import pickle
 
 
 class SimulationParams:
@@ -34,8 +35,7 @@ class Simulation:
         self.agents_at_destination: list[Agent] = []
         self.environment = params.environment
         # self.destinations = [(line.start.round(), line.center().round(), line.end.round()) for line in self.environment.exits]
-        self.exits = [Exit(l.start, l.end, i)
-                      for i, l in enumerate(self.environment.exits)]
+        self.exits: list[ExitEx] = self.environment.exits
         # TODO append all the points of the line
         self.params = params
 
@@ -47,11 +47,11 @@ class Simulation:
             a.calculate_panic_factor()
 
             if mode == "uniform":
-                xOffset = params.environment.size[0] * 0.1
-                yOffset = params.environment.size[1] * 0.1
+                xOffset = params.environment.size.x * 0.1
+                yOffset = params.environment.size.y * 0.1
                 while True:
                     a.source = Pair(xOffset + random.random(
-                    ) * (self.environment.size[0] - 2*xOffset), yOffset + random.random() * (self.environment.size[1] - 2*yOffset)).round()
+                    ) * (self.environment.size.x - 2*xOffset), yOffset + random.random() * (self.environment.size.y - 2*yOffset)).round()
                     a.position = a.source
 
                     if self.environment.is_valid_position(a.source):
@@ -101,7 +101,7 @@ class Simulation:
         print("Initialized agents")
         print("Number of agents: ", len(self.agents))
         print("Initializing navigation graphs")
-        self.navigation_graphs = self.init_navigation_graphs(plot=False)
+        self.navigation_graphs = self.init_navigation_graphs(plot=True)
         print("Initialized navigation graphs")
 
     def collective_density(self, agent0: Agent) -> int:
@@ -314,19 +314,25 @@ class Simulation:
 
         os.makedirs("cache", exist_ok=True)
 
-        filename = "cache/navigation_graphs_" + str(self.environment.size[0]) + "_" + str(self.environment.size[1]) + "_" + self.environment.filename + ".npy"
+        filename = "cache/navigation_graphs_" + str(self.environment.size.x) + "_" + str(self.environment.size.y) + "_" + self.environment.filename + ".cache"
         check = os.path.exists(filename)
 
         if check:
-            grids = np.load(filename, allow_pickle=True)
-            self.navigation_graphs = grids.item()
+            grids = pickle.loads(open(filename, "rb").read())
+            self.navigation_graphs = grids
+
+            if plot:
+                for grid in grids.values():
+                    plot_navigation_graph(grid)
+            
+
             return self.navigation_graphs
 
 
         grids = dict()
         for exit in self.exits:
-            grid = [[0] * (self.environment.size[1] + 1)
-                    for _ in range(self.environment.size[0] + 1)]
+            grid = [[0] * self.environment.size.y 
+                    for _ in range(self.environment.size.x)]
             # print(grid)
             # h = len(grid[0])
 
@@ -336,7 +342,7 @@ class Simulation:
                       Pair(2, 1), Pair(2, -1), Pair(-2, 1), Pair(-2, -1)]
             queue = []
 
-            for current in exit.points():
+            for current in exit.points:
                 grid[current.x][current.y] = None
                 for delta in deltas:
                     new = current + delta
@@ -368,9 +374,9 @@ class Simulation:
 
             grids[exit.id] = grid
 
-        self.navigation_graphs = grids
+        pickle.dump(grids, open(filename, "wb"))
 
-        np.save(filename, grids)
+        self.navigation_graphs = grids
 
         if plot:
             for grid in grids.values():
@@ -383,11 +389,12 @@ class Simulation:
         densities = dict()
         for exit in self.exits:
             # scan some radius back, and count the agents in the radius
-            radious_in_tiles = (exit.end - exit.start).scale(2.5)
+            radious_in_tiles = len(exit.points) * 4
             density = 0
             for agent in self.agents:
                 # check if agent.position is inside the radious starting from destination[1]
-                if (agent.position - exit.center()).norm() < radious_in_tiles.norm():
+                centerIdx = len(exit.points) // 2
+                if (agent.position - exit.points[centerIdx]).norm() < radious_in_tiles.norm():
                     density += 1
             densities[exit.id] = density / len(self.agents)
             # densities.append(0.5)
@@ -561,5 +568,5 @@ class Simulation:
 
         self.environment.plot(
             self.agents, clusters_of_agents, with_arrows=True)
-        self.environment.plot_path(self.agents_at_destination, save=True)
+        # self.environment.plot_path(self.agents_at_destination, save=True)
         self.environment.create_gif()
