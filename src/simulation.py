@@ -54,7 +54,11 @@ class Simulation:
                     ) * (self.environment.size[0] - 2*xOffset), yOffset + random.random() * (self.environment.size[1] - 2*yOffset)).round()
                     a.position = a.source
                     
-                    if a.position in set([a2.position for a2 in self.agents]):
+                    # if a.position in set([a2.position for a2 in self.agents]):
+                    #     # print("Not unique")
+                    #     continue
+                    if a.position in set([a2.position + delta for a2 in self.agents for delta in [Pair(0,0),Pair(0, 1), Pair(1, 0), Pair(-1, 0), Pair(0,-1),
+                                                                                                  Pair(1, 1), Pair(1, -1), Pair(-1, 1), Pair(-1, -1)]]):
                         # print("Not unique")
                         continue
 
@@ -135,7 +139,7 @@ class Simulation:
         the nearest collective neighbor with higher densiti
         """
         neighbour, distance = -1, None
-        for agent in self.agents:
+        for agent in [a for a in self.agents]:
             # TODO maybe use different distribution for agent initialization than uniform
             if agent0.relationship(agent) == 1:
                 if self.collective_density(agent0) < self.collective_density(agent):
@@ -529,6 +533,147 @@ class Simulation:
         # else:
         #     agent.velocity = (move).scale(agent.velocity.norm())
         agent.velocity = (move).scale(agent.velocity.norm())
+        
+    # @staticmethod
+    # def bresenham_line(line):
+    #     """Returns a list of grid cells that a line crosses using Bresenham's algorithm."""
+    #     x1 = line.start.x
+    #     y1 = line.start.y
+    #     x2 = line.end.x
+    #     y2 = line.end.y
+        
+    #     cells = []
+        
+    #     dx = abs(x2 - x1)
+    #     dy = abs(y2 - y1)
+    #     sx = 1 if x2 > x1 else -1
+    #     sy = 1 if y2 > y1 else -1
+    #     err = dx - dy
+
+    #     while True:
+    #         cells.append(Pair(x1, y1))
+    #         if x1 == x2 and y1 == y2:
+    #             break
+    #         e2 = 2 * err
+    #         if e2 > -dy:
+    #             err -= dy
+    #             x1 += sx
+    #         if e2 < dx:
+    #             err += dx
+    #             y1 += sy
+
+    #     return cells
+    
+    # @staticmethod
+    # def dda_line(line):
+    #     """Returns a set of grid cells that a line touches using the DDA algorithm."""
+    #     x1 = line.start.x
+    #     y1 = line.start.y
+    #     x2 = line.end.x
+    #     y2 = line.end.y
+        
+        
+    #     cells = set()  # Use a set to avoid duplicates
+        
+    #     dx = x2 - x1
+    #     dy = y2 - y1
+    #     steps = max(abs(dx), abs(dy))  # Determine the number of steps
+    #     x_step = dx / steps
+    #     y_step = dy / steps
+        
+    #     x, y = x1, y1  # Start from the first point
+
+    #     for _ in range(steps + 1):  # Include last point
+    #         cell_x = int(x)  # Get bottom-left x of the grid cell
+    #         cell_y = int(y)  # Get bottom-left y of the grid cell
+    #         cells.add((cell_x, cell_y))  # Add to set
+            
+    #         x += x_step  # Increment x
+    #         y += y_step  # Increment y
+            
+    #         # Check if the line crosses into a new cell at a corner
+    #         corner_x = int(x)
+    #         corner_y = int(y)
+    #         cells.add((corner_x, corner_y))  # Ensure corners are counted
+
+    #     return sorted(cells)  # Return sorted list for readability
+
+    
+    
+    @staticmethod
+    def touched_cells(line):
+        
+        def cell_representation(line):
+            """Returns a list of all faces (i, j) touched by the line from (x1, y1) to (x2, y2)"""
+            
+            x1 = line.start.x
+            y1 = line.start.y
+            x2 = line.end.x
+            y2 = line.end.y
+            faces = set()  # Use a set to store unique faces
+            
+            # Initialize stepping variables
+            dx, dy = x2 - x1, y2 - y1
+            sx = 1 if dx > 0 else -1
+            sy = 1 if dy > 0 else -1
+            dx, dy = abs(dx), abs(dy)
+            
+            # Current grid face
+            x, y = x1, y1
+            faces.add(Pair(x, y))
+
+            # Initial error terms
+            if dx > dy:
+                err = dx / 2.0
+                while x != x2:
+                    x += sx
+                    err -= dy
+                    if err < 0:
+                        y += sy
+                        err += dx
+                    faces.add(Pair(x, y))
+            else:
+                err = dy / 2.0
+                while y != y2:
+                    y += sy
+                    err -= dx
+                    if err < 0:
+                        x += sx
+                        err += dy
+                    faces.add(Pair(x, y))
+
+            return sorted(faces)
+        
+        cells = cell_representation(line)
+        
+        new_cells = []
+        for i in range(len(cells) - 1):
+            x1  = cells[i].x
+            y1 = cells[i].y
+            x2 = cells[i + 1].x
+            y2 = cells[i + 1].y
+            if x1 == x2 or y1 == y2:
+                continue
+            # new_cells.append(cells[i])
+            if random.random() < 0.5:
+                new_cells.append(Pair(x2, y1))
+            else:
+                new_cells.append(Pair(x1, y2))
+        
+        new_cells += [cells[i] - delta for delta in [Pair(0, 1), Pair(1, 0), Pair(1, 1)] for i in [0,-1]]
+        
+        return sorted(set(cells + new_cells))
+        
+
+
+    if __name__ == "__main__":
+        # Example: Line from (0,0) to (9,9) in a 10x10 grid
+        # line = Line(Pair(1,1), Pair(2,3))
+        line = Line(Pair(1,1),Pair(1,1))
+        cells = touched_cells(line)
+        print(cells)
+        
+
 
     def select_path(self, collision_avoidance=True):
         # if we choose a destination, the path is selected, as there is only one shortest path in the navigation graph of this destination
@@ -548,28 +693,86 @@ class Simulation:
         self.agents = tmp_agents
         
         # resolve conflicts, if the paths intersect, one will not move
-        if collision_avoidance:
-            for agent in self.agents:
-                for agent2 in self.agents:
-                    if agent.id == agent2.id:
-                        break
-                    line1 = Line(agent.history[-1], agent.position)
-                    line2 = Line(agent2.history[-1], agent2.position)
-                    intersection = line1.intersection(line2)
-                    if intersection is not None:
-                        # the spot just got free (both can go)
-                        if intersection == agent.position and intersection == agent2.history[-1] or \
-                            intersection == agent2.position and intersection == agent.history[-1]:
-                            continue
+        # if collision_avoidance:
+        #     for agent in self.agents:
+        #         for agent2 in self.agents:
+        #             if agent.id == agent2.id:
+        #                 break
+        #             line1 = Line(agent.history[-1], agent.position)
+        #             line2 = Line(agent2.history[-1], agent2.position)
+        #             intersection = line1.intersection(line2)
+        #             if intersection is not None:
+        #                 # the spot just got free (both can go)
+        #                 if intersection == agent.position and intersection == agent2.history[-1] or \
+        #                     intersection == agent2.position and intersection == agent.history[-1]:
+        #                     continue
                         
-                        # only one can go
-                        if random.random() < 0.5:
-                            agent.position = agent.history[-1].copy()
-                            agent.arrivied = agent.position in agent.destination.points()
-                        else:
-                            agent2.position = agent2.history[-1].copy()
-                            agent2.arrivied = agent2.position in agent.destination.points()
-                        break
+        #                 # only one can go
+        #                 if random.random() < 0.5:
+        #                     agent.position = agent.history[-1].copy()
+        #                     agent.arrivied = agent.position in agent.destination.points()
+        #                 else:
+        #                     agent2.position = agent2.history[-1].copy()
+        #                     agent2.arrivied = agent2.position in agent.destination.points()
+        #                 break
+        
+        # linear time
+        if collision_avoidance:
+            d = dict()
+            
+            for agent in self.agents:
+                line = Line(agent.history[-1], agent.position)
+                occupied_cells = Simulation.touched_cells(line)
+                print(agent.id, occupied_cells)
+                for cell in occupied_cells:
+                    if cell in d:
+                        d[cell].append(agent.id)
+                    else:
+                        d[cell] = [agent.id]
+            
+            # print(d)
+            # for cell, agents in d.items():
+            #     if len(agents) > 1:
+            #         print(cell, end=", ")
+            #         for agent_id in agents:
+            #             agent = [a for a in self.agents if a.id == agent_id][0]
+            #             print(agent.org_id, end=", ")
+            #         print()
+            
+            
+            stopped_agents = set()
+            for cell, agents in d.items():
+                if cell == Pair(22,9):
+                    pass
+                
+                if cell == Pair(23,10):
+                    pass
+                if cell in agent.destination.points():
+                    continue
+                remaining_agents = [agent for agent in agents if agent not in stopped_agents]
+                if len(remaining_agents) == 0:
+                    continue
+                
+                if len([1 for agent in stopped_agents if self.agents[agent].position == cell and self.agents[agent].history[-1] == cell]) > 0:
+                    approved_agent = None
+                else:
+                    approved_agent = random.choice(remaining_agents)           
+                    
+                for agent_id in remaining_agents:
+                    if agent_id != approved_agent:
+                        # stop unapproved agents
+                        stopped_agents.add(agent_id)
+                        agent = self.agents[agent_id]
+                        agent.position = agent.history[-1].copy()
+                        agent.arrivied = agent.position in agent.destination.points()
+                            
+            # # TODO remove
+            # for agent in self.agents:
+            #     for agent2 in self.agents:
+            #         if agent == agent2:
+            #             break
+            #         if agent.position == agent2.position:
+            #             pass
                         
         for agent in self.agents:
             if agent.arrivied:
@@ -578,7 +781,7 @@ class Simulation:
         for i, agent in enumerate(self.agents):
             agent.id = i
 
-    def run(self, clustering_mode, collision_avoidance):
+    def run(self, clustering_mode, collision_avoidance, color_mode = "id"):
         # delete all the files in plots folder
         # if plots folder does not exist create it 
         if not os.path.exists("plots"):
@@ -610,9 +813,10 @@ class Simulation:
             self.contagion_of_emotion_preferences(
                 Simulation.labels_to_clusters(clusters_of_agents))
             self.environment.plot(
-                self.agents, clusters_of_agents, with_arrows=False, save=True, step=i)
+                self.agents, clusters_of_agents, with_arrows=False, save=True, step=i,
+                color_mode = color_mode)
 
         self.environment.plot(
-            self.agents, clusters_of_agents, with_arrows=False)
+            self.agents, clusters_of_agents, with_arrows=False, color_mode = color_mode)
         self.environment.plot_path(self.agents_at_destination, save=True)
         self.environment.create_gif()
