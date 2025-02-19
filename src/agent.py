@@ -12,6 +12,7 @@ class Agent:
 
     def __init__(self, id: int):
         self.id = id
+        self.org_id = id
         self.source: Pair = Pair(None, None)
         self.destination: Exit = None
 
@@ -110,19 +111,19 @@ class Agent:
         Pv = fC + fE + fN
         return Pv
 
-    @functools.lru_cache(maxsize=5000)
+    # @functools.lru_cache(maxsize=5000)
     def d_xy(self, other: 'Agent'):
         """Calculate the positional difference between two agents
         """
         return (self.position - other.position).norm()
 
-    @functools.lru_cache(maxsize=5000)
+    # @functools.lru_cache(maxsize=5000)
     def d_ori(self, other: 'Agent'):
         """Calculate the angle difference between two agents
         """
         return np.abs(np.arctan2(self.velocity.y, self.velocity.x)-np.arctan2(other.velocity.y, other.velocity.x))
 
-    @functools.lru_cache(maxsize=5000)
+    # @functools.lru_cache(maxsize=5000)
     def relationship(self, other: 'Agent', cut_xy=50, cut_ori=np.pi / 3):
         """Are the agents in a collective relationship?
 

@@ -13,5 +13,6 @@ if __name__ == '__main__':
 
     print("Running simulation")
     # sim.run(clustering_mode="hierarchical_clustering")
-    sim.run(clustering_mode="default",collision_avoidance=True)
+    sim.run(clustering_mode="default",collision_avoidance=True, color_mode="id")
+    # sim.run(clustering_mode="default",collision_avoidance=True, color_mode="clusters")
     # sim.run(clustering_mode="fast_label_propagation")

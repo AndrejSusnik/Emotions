@@ -208,7 +208,7 @@ class Environment:
         else:
             plt.show()
 
-    def plot(self, agents, clusters_of_agents=None, with_arrows=False, arrow_scale=0.01, save=False, step=None):
+    def plot(self, agents, clusters_of_agents=None, with_arrows=False, arrow_scale=0.01, save=False, step=None, color_mode="clusters"):
         plt.close()
         agents_pos = np.array(
             [np.array([a.position.x, a.position.y]) for a in agents]).reshape(-1, 2)
@@ -223,7 +223,13 @@ class Environment:
             try:
                 _, colors = np.unique(clusters_of_agents, return_inverse=True)
                 # print(colors)
-                plt.scatter(agents_pos[:, 0], agents_pos[:,1], c=colors+1, cmap="plasma")
+                if color_mode == "clusters":
+                    plt.scatter(agents_pos[:, 0], agents_pos[:,1], c=colors+1, cmap="plasma")
+                elif color_mode == "id":
+                    plt.scatter(agents_pos[:, 0], agents_pos[:,1], c=[a.org_id for a in agents], cmap="plasma")
+                    for i, txt in enumerate([a.org_id for a in agents]):
+                        # plt.annotate(txt, (agents_pos[i, 0], agents_pos[i,1]), s = 0)
+                        plt.text(agents_pos[i, 0], agents_pos[i,1], txt)
                 plt.colorbar()
             except:
                 plt.scatter(agents_pos[:, 0], agents_pos[:, 1])
