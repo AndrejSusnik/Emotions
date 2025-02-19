@@ -40,6 +40,8 @@ class Environment:
         for exit in exits:
             for point in exit.points:
                 self.full_env[point.get()] = env_map['e']
+
+        self.contagious_sources = []
         
 
 

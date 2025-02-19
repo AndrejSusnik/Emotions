@@ -27,6 +27,13 @@ class ExitEx():
     def __init__(self, id : int, points : list = []):
         self.id = id
         self.points = points
+        # center is the average of all points
+        self.center = Pair(0, 0)
+        if len(points) > 0:
+            for point in points:
+                self.center += point
+            self.center.scale(1/len(points))
+
     
     def add_point(self, point : Pair):
         self.points.append(point)

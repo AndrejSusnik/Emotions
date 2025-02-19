@@ -11,11 +11,27 @@ def parse(filename):
             pixel_data = [pixel[:3] for pixel in pixel_data]
         return [pixel_data[i:i + img.width] for i in range(0, len(pixel_data), img.width)]
 
+def quantize(pixel):
+    r,g,b = pixel
+
+    if r == g and g == b:
+        # if r is closer to 255 make it 255 else 0
+        return (255, 255, 255) if r > 127 else (0, 0, 0)
+
+    return pixel
+
 def parse_bmp(filename):
     pixel_data = parse(filename)
+    pixel_data = [[quantize(pixel) for pixel in row] for row in pixel_data]
 
     walls = []
     exits = []
+
+    # print number of unique pixel values
+    print("Number of unique pixel values: ", end="")
+    uniq = set([pixel for row in pixel_data for pixel in row])
+
+    print(uniq)
 
     tmp_exit = ExitEx(0)
     for y, row in enumerate(pixel_data):
