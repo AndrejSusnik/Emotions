@@ -3,7 +3,7 @@ import random
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from agent import Agent
+from agent import Agent, relationship_2
 from environment import Environment
 from exit import ExitEx
 from helper_classes import Pair, Ocean, OceanDistribution
@@ -12,6 +12,8 @@ from joblib import Parallel, delayed
 import time
 import os
 import pickle
+from numba import njit, prange
+
 
 class SimulationParams:
     def __init__(self, num_agents: int, oceanDistribution: OceanDistribution, environment: Environment, use_panic=False, create_gif=False, simulation_time_in_seconds: int = 1000, dt: float = 0.1):
@@ -73,15 +75,14 @@ class Simulation:
                         a.source = p
                         a.position = a.source
                         break
-                    
-
 
             # go to nearest exit
             # _, a.destination = min([((a.position - destination).norm(), destination) for destination in self.destinations])
             # TODO reasonable values
             # random.random(3, 10)
             if a.velocity.x is None:
-                a.velocity = Pair(random.random() * 7 +3, random.random() * 7 +3)
+                a.velocity = Pair(random.random() * 7 + 3,
+                                  random.random() * 7 + 3)
             # a.velocity = Pair(0, 0)
             self.agents.append(a)
 
@@ -103,31 +104,43 @@ class Simulation:
         self.navigation_graphs = self.init_navigation_graphs(plot=False)
         print("Initialized navigation graphs")
 
+    @staticmethod
+    @njit(fastmath=True, parallel=True)
+    def calculate_rel_cache(agents):
+        cache = np.zeros((len(agents), len(agents)))
+        for i in prange(len(agents)):
+            for j in prange(len(agents)):
+                cache[i][j] = relationship_2(agents[i], agents[j])
+
+        return cache
+
     def collective_density(self, agent0: Agent) -> int:
         """Calculate the collective density of the agent
             that is number of relationships with other agents ("degree of the node")
         """
-        if self.rel_cache is not None:
-            return sum(self.rel_cache[agent0.id])
+        if self.rel_cache is None:
+            tmp_agents = np.array([(agent.id, agent.velocity.x, agent.velocity.y, agent.position.x,
+                                  agent.position.y, agent.destination.id if agent.destination is not None else 0) for agent in self.agents])
 
-        for agent in self.agents:
-            self.rel_cache = np.zeros((len(self.agents), len(self.agents)))
-            self.rel_cache[agent0.id][agent.id] = agent.relationship(agent0)
+            self.rel_cache = self.calculate_rel_cache(tmp_agents)
+            # self.rel_cache = np.zeros((len(self.agents), len(self.agents)))
+            # for agent0 in self.agents:
+            #     for agent in self.agents:
+            #         self.rel_cache[agent0.id][agent.id] = agent.relationship(
+            #             agent0)
 
         return sum(self.rel_cache[agent0.id])
-
 
     def closest_denser_neighbour(self, agent0: Agent, idx) -> Agent:
         """
         the nearest collective neighbor with higher densiti
         """
-        
+
         neighbour, distance = -1, None
-        for i,agent in enumerate(self.agents):
+        for i, agent in enumerate(self.agents):
             # TODO maybe use different distribution for agent initialization than uniform
             if self.rel_cache[agent0.id][agent.id] == 1:
-
-                if self.collective_densities[idx] < self.collective_densities[i]:
+                if self.collective_densities[idx] <= self.collective_densities[i]:
                     distance_ = (agent0.position - agent.position).norm()
                     if distance is None or distance_ < distance:
                         neighbour = agent
@@ -142,11 +155,13 @@ class Simulation:
                 return []
             self.rel_cache = None
 
-            self.collective_densities = np.array([self.collective_density(agent) for agent in self.agents])
-            agent_ids = np.flip(np.argsort(self.collective_densities)) # indexes of agents by descending density
-            
+            self.collective_densities = np.array(
+                [self.collective_density(agent) for agent in self.agents])
+            # indexes of agents by descending density
+            agent_ids = np.flip(np.argsort(self.collective_densities))
+
             clusters_of_agents = [None] * len(self.agents)
-            
+
             clusters_of_agents[agent_ids[0]] = int(agent_ids[0])
 
             for agent_id in agent_ids[1:]:
@@ -170,7 +185,7 @@ class Simulation:
         #                 break
         #             dist = (agent.position - agent2.position).norm()
         #             G.add_edge(agent.id, agent2.id, dist=dist)
-                        
+
         #     # sets_of_nodes = nx.community.fast_label_propagation_communities(G, weight="dist")
         #     # sets_of_nodes = nx.community.louvain_communities(G, weight="dist", resolution=1.1)
         #     # if G.number_of_nodes == 0:
@@ -179,7 +194,7 @@ class Simulation:
         #         sets_of_nodes = nx.community.kernighan_lin_bisection(G, weight=None)
         #     except:
         #         return [0] * len(self.agents)
-            
+
         #     l = [None] * len(self.agents)
         #     for i, s in enumerate(sets_of_nodes):
         #         print(s)
@@ -193,7 +208,8 @@ class Simulation:
                 for agent2 in self.agents:
                     if agent.id == agent2.id:
                         break
-                    dists[(agent.id, agent2.id)] = (agent.position - agent2.position).norm()
+                    dists[(agent.id, agent2.id)] = (
+                        agent.position - agent2.position).norm()
             # iterativly merge the closest clusters
             l = [i for i in range(len(self.agents))]
             distances = sorted(dists.items(), key=lambda x: x[1])
@@ -203,7 +219,6 @@ class Simulation:
                 if len(set(l)) == 2:
                     break
             return l
-                    
 
     @staticmethod
     def labels_to_clusters(clusters_of_agents: list[int]) -> list[set[int]]:
@@ -220,10 +235,10 @@ class Simulation:
     def contagion_of_emotion_preferences(self, clusters: list[set[int]]):
         """Update the emotion preferences (distance Pd, velocity Pv) of the agent based on the cluster he is in
         """
-        
+
         if len(self.agents) != 0 and self.agents[0].destination is None:
-            return 
-        
+            return
+
         prev_Pds = [agent.distance_preference for agent in self.agents]
         prev_Pvs = [agent.velocity_preference for agent in self.agents]
 
@@ -270,7 +285,7 @@ class Simulation:
                 dPv = sum([np.exp((prev_Pvs[j] - prev_Pvs[i])/(agent.d_xy(self.agents[j]) + EPSI)) for j in cluster if j != i]) \
                     + sum([np.exp(prev_Pvs[i]/((agent.position - contagious_source).norm() + EPSI))
                           for contagious_source in self.environment.contagious_sources])
-                    
+
                 dPd = min(1, dPd)
                 dPv = min(1, dPv)
 
@@ -288,41 +303,38 @@ class Simulation:
                 # TODO Above Pd there is a line in the article, but it is not clear what it means
                 y_prev_Pd.append(agent.distance_preference)
                 y_prev_Pv.append(agent.velocity_preference)
-                
+
                 agent.distance_preference = prev_Pds[i] + dPd * wd + Cd
                 agent.velocity_preference = prev_Pvs[i] + dPv * wv + Cv
-                
+
                 y_new_Pd.append(agent.distance_preference)
                 y_new_Pv.append(agent.velocity_preference)
-                
-            
+
                 # if np.isnan(agent.distance_preference) or np.isnan(agent.velocity_preference):
                 #     pass
-                
+
                 # if np.isinf(agent.distance_preference) or np.isinf(agent.velocity_preference):
                 #     pass
-                
+
                 # print("Agent", agent.id, "Pd", agent.distance_preference, "Pv", agent.velocity_preference)
             # plt.figure()
             # plt.plot(range(len(cluster)), y_prev_Pd, label="Pd_prev")
             # plt.plot(range(len(cluster)), y_new_Pd, label="Pd_new")
             # plt.legend()
             # plt.show()
-            
-            
+
             # plt.plot(range(len(cluster)), y_prev_Pv, label="Pv_prev")
             # plt.plot(range(len(cluster)), y_new_Pv, label="Pv_new")
             # plt.legend()
             # plt.show()
-            
-            
 
     def init_navigation_graphs(self, plot=False):
         # maybe this gets more interesting when there are more rooms
 
         os.makedirs("cache", exist_ok=True)
 
-        filename = "cache/navigation_graphs_" + str(self.environment.size.x) + "_" + str(self.environment.size.y) + "_" + self.environment.filename + ".cache"
+        filename = "cache/navigation_graphs_" + str(self.environment.size.x) + "_" + str(
+            self.environment.size.y) + "_" + self.environment.filename + ".cache"
         check = os.path.exists(filename)
 
         if check:
@@ -332,14 +344,12 @@ class Simulation:
             if plot:
                 for grid in grids.values():
                     plot_navigation_graph(grid)
-            
 
             return self.navigation_graphs
 
-
         grids = dict()
         for exit in self.exits:
-            grid = [[0] * self.environment.size.y 
+            grid = [[0] * self.environment.size.y
                     for _ in range(self.environment.size.x)]
             # print(grid)
             # h = len(grid[0])
@@ -397,7 +407,7 @@ class Simulation:
         densities = dict()
         for exit in self.exits:
             # scan some radius back, and count the agents in the radius
-            radious_in_tiles = len(exit.points) * 4
+            radious_in_tiles = len(exit.points) * 7
             density = 0
             for agent in self.agents:
                 # check if agent.position is inside the radious starting from destination[1]
@@ -406,7 +416,7 @@ class Simulation:
                     density += 1
             densities[exit.id] = density / len(self.agents)
             # densities.append(0.5)
-        print(densities)
+        # print(densities)
         return densities
 
     def calc_new_pos(self, agent, densities_of_exits):
@@ -414,6 +424,13 @@ class Simulation:
         for exit in self.exits:
             grid = self.navigation_graphs[exit.id]
             current = agent.position
+
+            if current in exit.points:
+                agent.destination = exit
+                agent.arrivied = True
+                agent.history.append(agent.position)
+                return
+
             if grid[current.x][current.y] is None:
                 # TODO: what to do if the agent is already at the destination
                 length = 0
@@ -483,6 +500,8 @@ class Simulation:
                 break
 
             agent.history.append(agent.position)
+            if (self.navigation_graphs[agent.destination.id][agent.position.x][agent.position.y] is None):
+                print("Trap")
             agent.position = self.navigation_graphs[agent.destination.id][agent.position.x][agent.position.y][0]
 
             # check if any other agent occupies the position
@@ -505,6 +524,10 @@ class Simulation:
 
                 agent.colided = True
                 break
+
+            if agent.position in agent.destination.points:
+                agent.arrivied = True
+                agent.history.append(agent.position)
 
             speed = speed - (prev_position - agent.position).norm()
 
@@ -542,7 +565,7 @@ class Simulation:
 
     def run(self, clustering_mode):
         # delete all the files in plots folder
-        # if plots folder does not exist create it 
+        # if plots folder does not exist create it
         if not os.path.exists("plots"):
             os.mkdir("plots")
 
@@ -568,15 +591,27 @@ class Simulation:
 
             if len(self.agents) == 0:
                 break
-
+            t0 = time.time()
             self.select_path()
+            print("Step time: ", time.time() - t0)
+            t1 = time.time()
             clusters_of_agents = self.clusters(mode=clustering_mode)
-            self.contagion_of_emotion_preferences(
-                Simulation.labels_to_clusters(clusters_of_agents))
-            self.environment.plot(
-                self.agents, clusters_of_agents, with_arrows=False, save=True, step=i)
+            print("Clustering time: ", time.time() - t1)
+            t2 = time.time()
+            labels = Simulation.labels_to_clusters(clusters_of_agents)
+            print("Label creation time: ", time.time() - t2)
+            t4 = time.time()
+            self.contagion_of_emotion_preferences(labels)
+            print("Contagion time: ", time.time() - t4)
+            t3 = time.time()
+            # self.environment.plot(
+            #     self.agents, clusters_of_agents, with_arrows=False, save=True, step=i)
+            self.environment.draw_bmp(self.agents, clusters_of_agents, i)
+            print("Plot time: ", time.time() - t3)
 
-        self.environment.plot(
-            self.agents, clusters_of_agents, with_arrows=True, save=True)
-        self.environment.plot_path(self.agents_at_destination, save=True)
-        self.environment.create_gif()
+            print("Step time: ", time.time() - t0)
+
+        # self.environment.plot(
+        #     self.agents, clusters_of_agents, with_arrows=True, save=True)
+        # self.environment.plot_path(self.agents_at_destination, save=True)
+        # self.environment.create_gif()
