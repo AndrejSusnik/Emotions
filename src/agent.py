@@ -3,6 +3,7 @@ import numpy as np
 import functools
 import scipy
 from exit import Exit
+from numba import njit
 
 
 class Agent:
@@ -153,3 +154,32 @@ class Agent:
 
         # return d_xy, d_ori, Wij
         return Wij
+
+@njit(fastmath=True)
+def relationship_2(agent1, agent2):
+    cut_xy=50
+    cut_ori=np.pi / 3
+
+    id1, vel1x, vel1y, pos1x, pos1y, dest1 = agent1
+    id2, vel2x, vel2y, pos2x, pos2y, dest2 = agent2
+
+    if id1 == id2:
+        return 0
+
+    dx = pos1x - pos2x
+    dy = pos1y - pos2y
+
+    d_xy = np.sqrt(dx*dx + dy*dy)
+    d_ori = np.abs(np.arctan2(vel1y, vel1x) - np.arctan2(vel2y, vel2x))
+
+    theta = np.exp(-(d_ori/cut_ori)**2) if d_ori >= cut_ori else 1 + \
+        np.exp(-(d_ori/cut_ori)**2)
+
+    share_same_goal = 1 if dest1 == dest2 else 0
+    # TODO check if this is philosophically correct (is destination goal?, what if destinations are very close?)
+
+    lam = 1 if share_same_goal else 0
+    Wij = 1 if d_xy <= (cut_xy * theta) or lam == 1 else 0
+
+    # return d_xy, d_ori, Wij
+    return Wij
