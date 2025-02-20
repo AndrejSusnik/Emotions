@@ -124,6 +124,16 @@ class Simulation:
         print("Initializing navigation graphs")
         self.navigation_graphs = self.init_navigation_graphs(plot=False)
         print("Initialized navigation graphs")
+        
+        self.agents_x = [agent for agent in self.agents]
+        self.agents_x.sort(key=lambda x: x.position.x)
+        
+        self.agents_y = [agent for agent in self.agents]
+        self.agents_y.sort(key=lambda x: x.position.y)
+        
+    def update_agents_x_y(self):
+        self.agents_x.sort(key=lambda x: x.position.x)
+        self.agents_y.sort(key=lambda x: x.position.y)
 
     def collective_density(self, agent0: Agent) -> int:
         """Calculate the collective density of the agent
@@ -600,78 +610,78 @@ class Simulation:
 
     
     
-    @staticmethod
-    def touched_cells(line):
+    # @staticmethod
+    # def touched_cells(line):
         
-        def cell_representation(line):
-            """Returns a list of all faces (i, j) touched by the line from (x1, y1) to (x2, y2)"""
+    #     def cell_representation(line):
+    #         """Returns a list of all faces (i, j) touched by the line from (x1, y1) to (x2, y2)"""
             
-            x1 = line.start.x
-            y1 = line.start.y
-            x2 = line.end.x
-            y2 = line.end.y
-            faces = set()  # Use a set to store unique faces
+    #         x1 = line.start.x
+    #         y1 = line.start.y
+    #         x2 = line.end.x
+    #         y2 = line.end.y
+    #         faces = set()  # Use a set to store unique faces
             
-            # Initialize stepping variables
-            dx, dy = x2 - x1, y2 - y1
-            sx = 1 if dx > 0 else -1
-            sy = 1 if dy > 0 else -1
-            dx, dy = abs(dx), abs(dy)
+    #         # Initialize stepping variables
+    #         dx, dy = x2 - x1, y2 - y1
+    #         sx = 1 if dx > 0 else -1
+    #         sy = 1 if dy > 0 else -1
+    #         dx, dy = abs(dx), abs(dy)
             
-            # Current grid face
-            x, y = x1, y1
-            faces.add(Pair(x, y))
+    #         # Current grid face
+    #         x, y = x1, y1
+    #         faces.add(Pair(x, y))
 
-            # Initial error terms
-            if dx > dy:
-                err = dx / 2.0
-                while x != x2:
-                    x += sx
-                    err -= dy
-                    if err < 0:
-                        y += sy
-                        err += dx
-                    faces.add(Pair(x, y))
-            else:
-                err = dy / 2.0
-                while y != y2:
-                    y += sy
-                    err -= dx
-                    if err < 0:
-                        x += sx
-                        err += dy
-                    faces.add(Pair(x, y))
+    #         # Initial error terms
+    #         if dx > dy:
+    #             err = dx / 2.0
+    #             while x != x2:
+    #                 x += sx
+    #                 err -= dy
+    #                 if err < 0:
+    #                     y += sy
+    #                     err += dx
+    #                 faces.add(Pair(x, y))
+    #         else:
+    #             err = dy / 2.0
+    #             while y != y2:
+    #                 y += sy
+    #                 err -= dx
+    #                 if err < 0:
+    #                     x += sx
+    #                     err += dy
+    #                 faces.add(Pair(x, y))
 
-            return sorted(faces)
+    #         return sorted(faces)
         
-        cells = cell_representation(line)
+    #     cells = cell_representation(line)
         
-        new_cells = []
-        for i in range(len(cells) - 1):
-            x1  = cells[i].x
-            y1 = cells[i].y
-            x2 = cells[i + 1].x
-            y2 = cells[i + 1].y
-            if x1 == x2 or y1 == y2:
-                continue
-            # new_cells.append(cells[i])
-            if random.random() < 0.5:
-                new_cells.append(Pair(x2, y1))
-            else:
-                new_cells.append(Pair(x1, y2))
+    #     new_cells = []
+    #     for i in range(len(cells) - 1):
+    #         x1  = cells[i].x
+    #         y1 = cells[i].y
+    #         x2 = cells[i + 1].x
+    #         y2 = cells[i + 1].y
+    #         if x1 == x2 or y1 == y2:
+    #             continue
+    #         # new_cells.append(cells[i])
+    #         if random.random() < 0.5:
+    #             new_cells.append(Pair(x2, y1))
+    #         else:
+    #             new_cells.append(Pair(x1, y2))
         
-        new_cells += [cells[i] - delta for delta in [Pair(0, 1), Pair(1, 0), Pair(1, 1)] for i in [0,-1]]
+    #     new_cells += [cells[i] - delta for delta in [Pair(0, 1), Pair(1, 0), Pair(1, 1)] for i in [0,-1]]
         
-        return sorted(set(cells + new_cells))
+    #     return sorted(set(cells + new_cells))
         
 
 
-    if __name__ == "__main__":
-        # Example: Line from (0,0) to (9,9) in a 10x10 grid
-        # line = Line(Pair(1,1), Pair(2,3))
-        line = Line(Pair(1,1),Pair(1,1))
-        cells = touched_cells(line)
-        print(cells)
+    # if __name__ == "__main__":
+    #     # Example: Line from (0,0) to (9,9) in a 10x10 grid
+    #     # line = Line(Pair(1,1), Pair(2,3))
+    #     line = Line(Pair(1,1),Pair(1,1))
+    #     cells = touched_cells(line)
+    #     print(cells)
         
 
 
@@ -716,19 +726,49 @@ class Simulation:
         #                     agent2.arrivied = agent2.position in agent.destination.points()
         #                 break
         
-        # linear time
-        if collision_avoidance:
-            d = dict()
+        # # linear time
+        # if collision_avoidance:
+        #     d = dict()
             
-            for agent in self.agents:
-                line = Line(agent.history[-1], agent.position)
-                occupied_cells = Simulation.touched_cells(line)
-                print(agent.id, occupied_cells)
-                for cell in occupied_cells:
-                    if cell in d:
-                        d[cell].append(agent.id)
-                    else:
-                        d[cell] = [agent.id]
+        #     for agent in self.agents:
+        #         line = Line(agent.history[-1], agent.position)
+        #         occupied_cells = Simulation.touched_cells(line)
+        #         print(agent.id, occupied_cells)
+        #         for cell in occupied_cells:
+        #             if cell in d:
+        #                 d[cell].append(agent.id)
+        #             else:
+        #                 d[cell] = [agent.id]
+                        
+        # resolve conflicts, if the paths intersect, one will not move
+        if collision_avoidance:
+            self.update_agents_x_y()
+            agent_pairs = []
+            k = 10 # number of neighbours to the right (up) to check against me
+            for ordering in [self.agents_x, self.agents_y]:
+                for i in range(len(ordering)-k-1):
+                    for j in range(k):
+                        agent_pairs.append((ordering[i], ordering[i+1+k]))
+            
+                        
+            for agent, agent2 in agent_pairs:
+                    line1 = Line(agent.history[-1], agent.position)
+                    line2 = Line(agent2.history[-1], agent2.position)
+                    intersection = line1.intersection(line2)
+                    if intersection is not None:
+                        # the spot just got free (both can go)
+                        if intersection == agent.position and intersection == agent2.history[-1] or \
+                            intersection == agent2.position and intersection == agent.history[-1]:
+                            continue
+                        
+                        # only one can go
+                        if random.random() < 0.5:
+                            agent.position = agent.history[-1].copy()
+                            agent.arrivied = agent.position in agent.destination.points()
+                        else:
+                            agent2.position = agent2.history[-1].copy()
+                            agent2.arrivied = agent2.position in agent.destination.points()
+                        break
             
             # print(d)
             # for cell, agents in d.items():
@@ -740,31 +780,31 @@ class Simulation:
             #         print()
             
             
-            stopped_agents = set()
-            for cell, agents in d.items():
-                if cell == Pair(22,9):
-                    pass
+            # stopped_agents = set()
+            # for cell, agents in d.items():
+            #     if cell == Pair(22,9):
+            #         pass
                 
-                if cell == Pair(23,10):
-                    pass
-                if cell in agent.destination.points():
-                    continue
-                remaining_agents = [agent for agent in agents if agent not in stopped_agents]
-                if len(remaining_agents) == 0:
-                    continue
+            #     if cell == Pair(23,10):
+            #         pass
+            #     if cell in agent.destination.points():
+            #         continue
+            #     remaining_agents = [agent for agent in agents if agent not in stopped_agents]
+            #     if len(remaining_agents) == 0:
+            #         continue
                 
-                if len([1 for agent in stopped_agents if self.agents[agent].position == cell and self.agents[agent].history[-1] == cell]) > 0:
-                    approved_agent = None
-                else:
-                    approved_agent = random.choice(remaining_agents)           
+            #     if len([1 for agent in stopped_agents if self.agents[agent].position == cell and self.agents[agent].history[-1] == cell]) > 0:
+            #         approved_agent = None
+            #     else:
+            #         approved_agent = random.choice(remaining_agents)           
                     
-                for agent_id in remaining_agents:
-                    if agent_id != approved_agent:
-                        # stop unapproved agents
-                        stopped_agents.add(agent_id)
-                        agent = self.agents[agent_id]
-                        agent.position = agent.history[-1].copy()
-                        agent.arrivied = agent.position in agent.destination.points()
+            #     for agent_id in remaining_agents:
+            #         if agent_id != approved_agent:
+            #             # stop unapproved agents
+            #             stopped_agents.add(agent_id)
+            #             agent = self.agents[agent_id]
+            #             agent.position = agent.history[-1].copy()
+            #             agent.arrivied = agent.position in agent.destination.points()
                             
             # # TODO remove
             # for agent in self.agents:
