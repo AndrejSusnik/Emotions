@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors  # Import colors from matplotlib
 from agent import Agent
 import imageio
-from bmp_parser import parse_bmp
+from bmp_parser import parse_bmp, write_bmp
 from exit import ExitEx
 
 from helper_classes import Pair, Line, Rect
@@ -25,21 +25,23 @@ class Environment:
         """
         load_dotenv()
         path = os.getenv("ENVIRONMENTS_PATH")
-        exits, walls, size = parse_bmp(path  +"/"+ filename)
+        exits, walls, size, raw = parse_bmp(path  +"/"+ filename)
+
+        self.raw_img = raw
 
         self.filename = filename
         self.size = size
         self.exits: list[ExitEx] = exits
         self.walls: list[Pair] = walls
 
-        self.full_env = np.zeros(size.get())
+        # self.full_env = np.zeros(size.get())
 
-        for wall in walls:
-            self.full_env[wall.get()] = env_map['w']
+        # for wall in walls:
+        #     self.full_env[wall.get()] = env_map['w']
 
-        for exit in exits:
-            for point in exit.points:
-                self.full_env[point.get()] = env_map['e']
+        # for exit in exits:
+        #     for point in exit.points:
+        #         self.full_env[point.get()] = env_map['e']
 
         self.contagious_sources = []
         
@@ -136,3 +138,15 @@ class Environment:
         imageio.mimsave('plots/test.gif', images, 'GIF', loop=1, duration=1, fps=1)
         print("Gif created")
 
+    def draw_bmp(self, agents, clusters, step):
+        filename = f"plots/plot_{str(step).zfill(4)}.bmp"
+
+        tmp = np.copy(self.raw_img)
+
+        for agent in agents:
+            # agents are green dots
+            tmp[agent.position.y, agent.position.x] = [0, 255, 0]
+
+
+
+        write_bmp(tmp, filename)

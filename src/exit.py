@@ -32,11 +32,16 @@ class ExitEx():
         if len(points) > 0:
             for point in points:
                 self.center += point
-            self.center.scale(1/len(points))
+            self.center = self.center.scale(1/len(points))
 
     
     def add_point(self, point : Pair):
         self.points.append(point)
+
+        self.center = Pair(0, 0)
+        for point in self.points:
+            self.center += point
+        self.center = self.center.scale(1/len(self.points))
 
     def is_empty(self):
         return len(self.points) == 0
