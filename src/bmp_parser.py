@@ -23,6 +23,7 @@ def quantize(pixel):
 def parse_bmp(filename):
     pixel_data = parse(filename)
     pixel_data = [[quantize(pixel) for pixel in row] for row in pixel_data]
+    raw = np.array([np.array([tuple(pixel) for pixel in row]) for row in pixel_data])
 
     walls = []
     exits = []
@@ -47,10 +48,15 @@ def parse_bmp(filename):
                         tmp_exit.add_point(Pair(x, y))
                     else:
                         exits.append(tmp_exit)
-                        tmp_exit = ExitEx(len(exits))
+                        tmp_exit = ExitEx(len(exits), [])
                         tmp_exit.add_point(Pair(x, y))
     
     if not tmp_exit.is_empty():
         exits.append(tmp_exit)
                     
-    return exits, walls, Pair(len(pixel_data[0]), len(pixel_data))
+    return exits, walls, Pair(len(pixel_data[0]), len(pixel_data)), raw 
+
+def write_bmp(array, filename):
+    img = Image.new('RGB', (len(array[0]), len(array)))
+    img.putdata([tuple(pixel) for row in array for pixel in row])
+    img.save(filename)
