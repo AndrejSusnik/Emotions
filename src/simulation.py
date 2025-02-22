@@ -45,14 +45,19 @@ class Simulation:
         for i in range(params.num_agents):
             a = Agent(i)
             a.traits = Ocean.sample(params.oceanDistribution)
+            a.calculate_preferences()
             a.calculate_panic_factor()
 
             if mode == "uniform":
-                xOffset = params.environment.size.x * 0.1
-                yOffset = params.environment.size.y * 0.1
+                xOffset = params.environment.size.x * 0.0
+                yOffset = params.environment.size.y * 0.0
+                
+                spawn_x = 0.25
+                spawn_y = 0.5
+
                 while True:
                     a.source = Pair(xOffset + random.random(
-                    ) * (self.environment.size.x - 2*xOffset), yOffset + random.random() * (self.environment.size.y - 2*yOffset)).round()
+                    ) * (self.environment.size.x * spawn_x - 2*xOffset), yOffset + random.random() * (self.environment.size.y * spawn_y - 2*yOffset)).round()
                     a.position = a.source
 
                     if self.environment.is_valid_position(a.source):
@@ -403,20 +408,45 @@ class Simulation:
         return grids
 
     def get_densities(self):
-        # scan in the radious that is 1,5 times the size of the destination
+        tmp = np.copy(self.environment.raw_img)
+
+        for agent in self.agents:
+            tmp[agent.position.y, agent.position.x] = [0, 255, 0]
+
         densities = dict()
         for exit in self.exits:
-            # scan some radius back, and count the agents in the radius
-            radious_in_tiles = len(exit.points) * 7
-            density = 0
+            acc = 0
             for agent in self.agents:
-                # check if agent.position is inside the radious starting from destination[1]
-                centerIdx = len(exit.points) // 2
-                if (agent.position - exit.points[centerIdx]).norm() < radious_in_tiles:
-                    density += 1
-            densities[exit.id] = density / len(self.agents)
+                if agent.destination is None:
+                    continue
+                if agent.destination.id == exit.id:
+                    acc += 1
+                else:
+                    for sibling_id in exit.siblings:
+                        if agent.destination.id == sibling_id:
+                            acc += 1
+            
+            density = 0
+            # scan the area around the exit and count the agents
+            # pos = exit.center
+            # for i in range(-10, 10):
+            #     for j in range(-10, 10):
+            #         x = pos.x + i
+            #         y = pos.y + j
+
+            #         if x < 0 or y < 0 or x >= len(tmp[0]) or y >= len(tmp):
+            #             continue
+                    
+            #         # if green pixel is found increment the density
+            #         if tmp[int(x)][int(y)][1] == 255:
+            #             density += 1
+                    
+
+            density += acc
+            densities[exit.id] = density / ((len(self.agents) + len(self.agents_at_destination))*4)
             # densities.append(0.5)
-        # print(densities)
+        print(densities)
+        
         return densities
 
     def calc_new_pos(self, agent, densities_of_exits):
@@ -515,6 +545,7 @@ class Simulation:
                 # move to random unoccupied position one step back
 
                 pos = agent.position
+                # TODO: check this
                 random.shuffle(deltas)
                 for delta in deltas:
                     new_pos = pos + delta
@@ -614,4 +645,4 @@ class Simulation:
         # self.environment.plot(
         #     self.agents, clusters_of_agents, with_arrows=True, save=True)
         # self.environment.plot_path(self.agents_at_destination, save=True)
-        # self.environment.create_gif()
+        self.environment.create_gif()
