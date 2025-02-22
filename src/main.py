@@ -6,7 +6,7 @@ from helper_classes import OceanDistribution, Pair
 if __name__ == '__main__':
     oceanDistribution = OceanDistribution(Pair(0.5, 0.1), Pair(0.5, 0.1), Pair(0.5, 0.1), Pair(0.5, 0.1), Pair(0.5, 0.1))
     print("Creating environment")
-    environment = Environment('env.bmp', size_in_meters=Pair(30,30), tile_size_in_meters=Pair(1, 1), with_obstacles=True)
+    environment = Environment('article.bmp', size_in_meters=Pair(30,30), tile_size_in_meters=Pair(1, 1), with_obstacles=True)
     print("Creating simulation")
     sim_params = SimulationParams(num_agents=500, oceanDistribution=oceanDistribution, environment=environment, create_gif=True, simulation_time_in_seconds=100)
     sim = Simulation(sim_params,mode="uniform")
