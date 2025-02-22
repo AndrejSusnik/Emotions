@@ -26,6 +26,7 @@ class ExitEx():
     """ExitEx is an extended exit, it has an id and a list of points"""
     def __init__(self, id : int, points : list = []):
         self.id = id
+        self.siblings = set()
         self.points = points
         # center is the average of all points
         self.center = Pair(0, 0)
@@ -34,6 +35,9 @@ class ExitEx():
                 self.center += point
             self.center = self.center.scale(1/len(points))
 
+    def add_sibling(self, sibling):
+        self.siblings.add(sibling.id)
+        sibling.siblings.add(self.id)
     
     def add_point(self, point : Pair):
         self.points.append(point)
