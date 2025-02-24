@@ -53,7 +53,7 @@ class Simulation:
                 yOffset = params.environment.size.y * 0.0
                 
                 spawn_x = 0.25
-                spawn_y = 0.5
+                spawn_y = 0.60
 
                 while True:
                     a.source = Pair(xOffset + random.random(

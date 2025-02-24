@@ -143,6 +143,10 @@ class Environment:
 
         tmp = np.copy(self.raw_img)
 
+        if len(agents) == 0:
+            write_bmp(tmp, filename)
+            return
+
         max_pd = max([agent.distance_preference for agent in agents])
         max_pv = max([agent.velocity_preference for agent in agents])
 
@@ -153,7 +157,5 @@ class Environment:
             red = int(agent.velocity_preference / max_pv * 255)
 
             tmp[agent.position.y, agent.position.x] = [blue, 2, red]
-
-
 
         write_bmp(tmp, filename)
