@@ -138,14 +138,21 @@ class Environment:
         imageio.mimsave('plots/test.gif', images, 'GIF', loop=1, duration=1, fps=1)
         print("Gif created")
 
-    def draw_bmp(self, agents, clusters, step):
+    def draw_bmp(self, agents: list[Agent], clusters, step):
         filename = f"plots/plot_{str(step).zfill(4)}.bmp"
 
         tmp = np.copy(self.raw_img)
 
+        max_pd = max([agent.distance_preference for agent in agents])
+        max_pv = max([agent.velocity_preference for agent in agents])
+
         for agent in agents:
             # agents are green dots
-            tmp[agent.position.y, agent.position.x] = [0, 255, 0]
+
+            blue = int(agent.distance_preference / max_pd * 255)
+            red = int(agent.velocity_preference / max_pv * 255)
+
+            tmp[agent.position.y, agent.position.x] = [blue, 2, red]
 
 
 
