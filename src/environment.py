@@ -135,7 +135,7 @@ class Environment:
         for filename in filenames:
             images.append(imageio.imread(f'plots/{filename}'))
 
-        imageio.mimsave('plots/test.gif', images, 'GIF', loop=1, duration=1, fps=1)
+        imageio.mimsave('plots/test.gif', images, 'GIF', loop=1, duration=1, fps=10)
         print("Gif created")
 
     def draw_bmp(self, agents: list[Agent], clusters, step):

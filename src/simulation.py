@@ -414,17 +414,19 @@ class Simulation:
             tmp[agent.position.y, agent.position.x] = [0, 255, 0]
 
         densities = dict()
+        const = 100
         for exit in self.exits:
             acc = 0
             for agent in self.agents:
                 if agent.destination is None:
                     continue
                 if agent.destination.id == exit.id:
-                    acc += 1
+                    dest_from_exit = (agent.position - exit.center).norm()
+                    acc += (1 / (dest_from_exit + 1e-11)) * const
                 else:
                     for sibling_id in exit.siblings:
                         if agent.destination.id == sibling_id:
-                            acc += 1
+                            acc += (1 / (agent.position - exit.center).norm() * const)
             
             density = 0
             # scan the area around the exit and count the agents
@@ -580,10 +582,10 @@ class Simulation:
         # for agent in self.tmp_agents:
         #     self.calcNewPas(agent, densities_of_exits)
 
-        t = time.time()
+        # t = time.time()
         _ = Parallel(n_jobs=-1, prefer="threads")(delayed(self.calc_new_pos)
                                                   (agent, densities_of_exits) for agent in tmp_agents)
-        print(time.time() - t)
+        # print(time.time() - t)
 
         self.agents = tmp_agents
 
@@ -616,33 +618,38 @@ class Simulation:
         num_steps = int(
             self.params.simulation_time_in_seconds / self.params.dt)
 
+        print("Number of agents: ", len(self.agents))
+        t0 = time.time()
         for i in range(num_steps):
-            print(f"Step {i}")
-            print(f"Number of agents: {len(self.agents)}")
+            # print(f"Step {i}")
+            # print(f"Number of agents: {len(self.agents)}")
 
             if len(self.agents) == 0:
                 break
-            t0 = time.time()
+            # t0 = time.time()
             self.select_path()
-            print("Step time: ", time.time() - t0)
-            t1 = time.time()
+            # print("Step time: ", time.time() - t0)
+            # t1 = time.time()
             clusters_of_agents = self.clusters(mode=clustering_mode)
-            print("Clustering time: ", time.time() - t1)
-            t2 = time.time()
+            # print("Clustering time: ", time.time() - t1)
+            # t2 = time.time()
             labels = Simulation.labels_to_clusters(clusters_of_agents)
-            print("Label creation time: ", time.time() - t2)
-            t4 = time.time()
+            # print("Label creation time: ", time.time() - t2)
+            # t4 = time.time()
             self.contagion_of_emotion_preferences(labels)
-            print("Contagion time: ", time.time() - t4)
-            t3 = time.time()
+            # print("Contagion time: ", time.time() - t4)
+            # t3 = time.time()
             # self.environment.plot(
             #     self.agents, clusters_of_agents, with_arrows=False, save=True, step=i)
             self.environment.draw_bmp(self.agents, clusters_of_agents, i)
-            print("Plot time: ", time.time() - t3)
+            # print("Plot time: ", time.time() - t3)
 
-            print("Step time: ", time.time() - t0)
-
-        # self.environment.plot(
-        #     self.agents, clusters_of_agents, with_arrows=True, save=True)
-        # self.environment.plot_path(self.agents_at_destination, save=True)
+            # print("Step time: ", time.time() - t0)
         self.environment.create_gif()
+
+        sim_time = time.time() - t0
+
+        avg_fps = num_steps / sim_time
+        print(f"Simulation time: {sim_time} s")
+        print(f"Average FPS: {avg_fps}")
+
