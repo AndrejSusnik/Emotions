@@ -43,7 +43,9 @@ class Environment:
         #     for point in exit.points:
         #         self.full_env[point.get()] = env_map['e']
 
-        self.contagious_sources = []
+        # place contagious source in the middle
+
+        self.contagious_sources = [Pair(int(size.x / 2), int(size.y / 2) - 40)]
         
 
 
@@ -135,7 +137,7 @@ class Environment:
         for filename in filenames:
             images.append(imageio.imread(f'plots/{filename}'))
 
-        imageio.mimsave('plots/test.gif', images, 'GIF', loop=1, duration=1, fps=10)
+        imageio.mimsave('plots/test.gif', images, 'GIF', loop=0, duration=1, fps=240)
         print("Gif created")
 
     def draw_bmp(self, agents: list[Agent], clusters, step):
@@ -156,6 +158,9 @@ class Environment:
             blue = int(agent.distance_preference / max_pd * 255)
             red = int(agent.velocity_preference / max_pv * 255)
 
-            tmp[agent.position.y, agent.position.x] = [blue, 2, red]
+            tmp[agent.position.y, agent.position.x] = [blue, 20, red]
+
+        for contagious_source in self.contagious_sources:
+            tmp[contagious_source.y, contagious_source.x] = [255, 255, 0] 
 
         write_bmp(tmp, filename)
