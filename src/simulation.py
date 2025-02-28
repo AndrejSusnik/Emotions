@@ -23,7 +23,7 @@ class SimulationParams:
         self.simulation_time_in_seconds = simulation_time_in_seconds
         self.dt = dt
         self.create_gif = False
-        self.use_panic = False
+        self.use_panic = False 
 
 
 class Simulation:
@@ -257,7 +257,7 @@ class Simulation:
                 if self.params.use_panic:
                     agent = self.agents[0]
                     # depending on the panic_factor user should move to the cluster average
-                    agent.current_panic = agent.current_panic * 0.05
+                    agent.current_panic = agent.current_panic * 0.005
                     # print("Agent panic factor: ", agent.current_panic)
 
                 continue
@@ -279,8 +279,10 @@ class Simulation:
                         agent.current_panic -= (agent.current_panic -
                                                 agent.panic_factor) * 0.3
 
+
                     agent.current_panic += agent.panic_factor * panic_diff * 0.05
                     agent.current_panic = max(0, min(1, agent.current_panic))
+                    agent.current_panic *= 0.9
 
                 EPSI = 1e-11  # to avoid division by zero
                 # (contagion inside cluster) + (contagion from contagious sources ex. fire)
@@ -353,7 +355,9 @@ class Simulation:
             return self.navigation_graphs
 
         grids = dict()
+        print("Number of exits: ", len(self.exits))
         for exit in self.exits:
+            print("Calculating navigation graph for exit", exit.id)
             grid = [[0] * self.environment.size.y
                     for _ in range(self.environment.size.x)]
             # print(grid)
@@ -499,11 +503,14 @@ class Simulation:
                   Pair(2, 1), Pair(2, -1), Pair(-2, 1), Pair(-2, -1)]
 
         move_random = False
+        moved = False
 
         if self.params.use_panic:
             num = random.random()
+            # print("Panic factor: ", agent.current_panic)
             if num < agent.current_panic:
                 move_random = True
+                # print("Agent", agent.id, "is panicking")
 
             if move_random:
                 while True:
@@ -517,6 +524,8 @@ class Simulation:
                                 collision = True
                         if self.environment.is_valid_position(new_pos) and not collision:
                             agent.position = new_pos
+                            agent.velocity = Pair(random.random() * 2, random.random() * 2)
+                            moved = True
                             break
                     break
                 if agent.position in agent.destination.points:
@@ -524,7 +533,7 @@ class Simulation:
                     agent.history.append(agent.position)
 
         # for i in range(speed):
-        while speed > 0 and (not move_random):
+        while speed > 0 and ((not move_random) or (not moved)):
             # if agent position is in between the start and end of the line
             if agent.position in agent.destination.points:
                 agent.arrivied = True
@@ -532,8 +541,6 @@ class Simulation:
                 break
 
             agent.history.append(agent.position)
-            if (self.navigation_graphs[agent.destination.id][agent.position.x][agent.position.y] is None):
-                print("Trap")
             agent.position = self.navigation_graphs[agent.destination.id][agent.position.x][agent.position.y][0]
 
             # check if any other agent occupies the position
@@ -581,6 +588,7 @@ class Simulation:
 
         # for agent in self.tmp_agents:
         #     self.calcNewPas(agent, densities_of_exits)
+        # print("Max panic factor" , max([agent.current_panic for agent in self.agents]))
 
         # t = time.time()
         _ = Parallel(n_jobs=-1, prefer="threads")(delayed(self.calc_new_pos)
